@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import tempfile
 import fcntl
+from datetime import datetime, timezone
 
 import dns.name
 import dns.rdatatype
@@ -103,26 +104,35 @@ def _bump_soa_serial(zone_text: str) -> str:
     return zone_text.replace(serial, new_serial, 1)
 
 
-def write_zone_file(zone_name: str, zone_file: str, recordsets: list[RecordSet], default_ttl: int) -> None:
+def write_zone_file(
+        zone_name: str,
+        zone_file: str,
+        recordsets: list[RecordSet],
+        default_ttl: int,
+        serial: int | None = None,
+        primary_ns: str = "ns1",
+        nameservers: list[str] = ["ns1"],
+    ) -> None:
     """
     Rewrite entire zone file (UI-managed style).
     Keeps a minimal SOA + NS. (You can expand later.)
     """
-    origin = dns.name.from_text(zone_name)
+    serial = serial or int(datetime.now(timezone.utc).strftime("%Y%m%d01"))
     lines: list[str] = []
     lines.append(f"$TTL {default_ttl}")
 
     # Minimal SOA (serial will be bumped on rewrite)
-    lines.append(f"@ IN SOA ns1.{zone_name} hostmaster.{zone_name} (")
-    lines.append("    2026010201 ; serial")
+    lines.append(f"@ IN SOA {primary_ns}.{zone_name} hostmaster.{zone_name} (")
+    lines.append(f"    {serial} ; serial")
     lines.append("    3600 ; refresh")
     lines.append("    600 ; retry")
     lines.append("    1209600 ; expire")
     lines.append(f"    {default_ttl} ; minimum")
     lines.append(")")
-    lines.append(f"@ IN NS ns1.{zone_name}")
-    lines.append(f"@ IN NS ns2.{zone_name}")
-    lines.append(f"@ IN NS ns3.{zone_name}")
+    
+    # Default NS records
+    for ns in nameservers:
+        lines.append(f"@ IN NS {ns}.{zone_name}")
     lines.append("")
 
     # Records

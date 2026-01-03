@@ -65,8 +65,16 @@ export function CreateZoneModal({ opened, onClose }: { opened: boolean; onClose:
     }
   };
 
+  const handleClose = () => {
+    setName("");
+    setTags([]);
+    setDnssec(false);
+    setType("public");
+    onClose();
+  };
+
   return (
-    <Modal opened={opened} onClose={onClose} title="Create hosted zone" size="md">
+    <Modal opened={opened} onClose={handleClose} title="Create hosted zone" size="md">
       <Stack>
         <TextInput label="Zone name" placeholder="example.com" value={name} onChange={(e) => setName(e.currentTarget.value)} />
         <SegmentedControl value={type} onChange={(v) => setType(v as ZoneType)} data={[
