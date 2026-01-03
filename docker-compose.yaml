@@ -1,0 +1,11 @@
+services:
+  dns:
+    image: dns
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dns_server
+    ports:
+      #- "53:53"
+      - "8080:8080"
+    restart: unless-stopped

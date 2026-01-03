@@ -1,0 +1,14 @@
+[project]
+name = "dns-api"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+  "fastapi>=0.119.0",
+  "uvicorn[standard]>=0.30.0",
+  "pydantic>=2.7.0",
+  "pydantic-settings>=2.2.1",
+  "dnspython>=2.8.0",
+]
+
+[tool.uvicorn]
+factory = false

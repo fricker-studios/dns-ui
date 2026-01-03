@@ -1,0 +1,41 @@
+POETRY_VERSION=2.2.1
+APP_NAME=dns
+
+python-env:
+	# Create virtual environment if it doesn't exist
+	if [ ! -d .venv ]; then python3.12 -m venv .venv; fi
+	. .venv/bin/activate; \
+	pip install -U pip; \
+	pip install poetry==$(POETRY_VERSION); \
+	poetry config virtualenvs.in-project true; \
+	poetry install --no-root --with dev
+	@echo "Environment setup complete."
+	@echo "Activate with '. .venv/bin/activate', or use 'make shell' to enter a Docker container."
+
+node-env:
+	npm --prefix=frontend install
+
+env:node-env python-env
+	# Copy .env.example to .env if it doesn't exist
+	if [ ! -f .env ]; then cp .env.example .env; fi
+
+clean:
+	rm -rf frontend/dist
+	rm -rf frontend/node_modules
+	rm -rf .venv
+
+build:
+	docker build -t $(APP_NAME) .
+
+runserver: build
+	docker compose up -d dns
+
+pretty:
+	docker compose up -d api
+	docker compose run --rm api black .
+	npm --prefix=frontend run prettier:write
+
+lint:
+	docker compose up -d api
+	docker compose run --rm api flake8 .
+	npm --prefix=frontend run eslint
