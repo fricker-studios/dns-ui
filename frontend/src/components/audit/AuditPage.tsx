@@ -10,8 +10,8 @@ export function AuditPage() {
   const { state, activeZone } = useDnsStore();
 
   const list = useMemo(
-    () => state.audit.filter((a) => a.zoneId === activeZone.id),
-    [state.audit, activeZone.id]
+    () => activeZone ? state.audit.filter((a) => a.zoneId === activeZone.id) : [],
+    [state.audit, activeZone]
   );
 
   return (

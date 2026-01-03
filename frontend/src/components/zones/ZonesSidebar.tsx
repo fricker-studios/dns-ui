@@ -32,6 +32,23 @@ export function ZonesSidebar() {
     );
   }, [state.zones, query]);
 
+  if (state.zones.length === 0) {
+    return (
+      <>
+        <Stack gap="sm" h="100%">
+          <Group justify="space-between">
+            <Title order={5}>Hosted zones</Title>
+            <ActionIcon variant="default" onClick={() => setCreateOpen(true)} title="Create zone">
+              <IconPlus size={18} />
+            </ActionIcon>
+          </Group>
+          <Text c="dimmed" size="sm">No zones found. Create one to get started.</Text>
+        </Stack>
+        <CreateZoneModal opened={createOpen} onClose={() => setCreateOpen(false)} />
+      </>
+    );
+  }
+
   return (
     <>
       <Stack gap="sm" h="100%">
@@ -62,7 +79,7 @@ export function ZonesSidebar() {
                   p="sm"
                   radius="md"
                   style={{ cursor: "pointer", opacity: selected ? 1 : 0.95 }}
-                  onClick={() => setActiveZone(z.id)}
+                  onClick={() => setActiveZone(z.id, z.name)}
                 >
                   <Group justify="space-between" align="flex-start">
                     <Box>

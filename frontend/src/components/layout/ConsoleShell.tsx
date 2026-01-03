@@ -22,8 +22,8 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
   const { state, activeZone, applyPendingChanges } = useDnsStore();
 
   const pending = useMemo(
-    () => state.changes.filter((c) => c.zoneId === activeZone.id && c.status === "PENDING").length,
-    [state.changes, activeZone.id]
+    () => activeZone ? state.changes.filter((c) => c.zoneId === activeZone.id && c.status === "PENDING").length : 0,
+    [state.changes, activeZone]
   );
 
   const [recordModalOpen, setRecordModalOpen] = useState(false);
@@ -62,13 +62,9 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
               <Button
                 variant={pending ? "filled" : "default"}
                 leftSection={<IconRefresh size={16} />}
+                disabled={!activeZone || pending === 0}
                 onClick={() => {
                   applyPendingChanges();
-                  notifications.show({
-                    color: "green",
-                    title: "Changes applied",
-                    message: "Simulated: wrote zone file and ran rndc reload.",
-                  });
                 }}
               >
                 Apply changes {pending ? `(${pending})` : ""}

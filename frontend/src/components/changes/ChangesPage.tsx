@@ -10,8 +10,8 @@ export function ChangesPage() {
   const { state, activeZone } = useDnsStore();
 
   const list = useMemo(
-    () => state.changes.filter((c) => c.zoneId === activeZone.id),
-    [state.changes, activeZone.id]
+    () => activeZone ? state.changes.filter((c) => c.zoneId === activeZone.id) : [],
+    [state.changes, activeZone]
   );
 
   return (

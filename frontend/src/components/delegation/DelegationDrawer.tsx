@@ -14,9 +14,10 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
   const [createChild, setCreateChild] = useState(true);
   const [childType, setChildType] = useState<ZoneType>("public");
 
-  const childFqdn = useMemo(() => fqdnJoin(label || "dev", activeZone.name), [label, activeZone.name]);
+  const childFqdn = useMemo(() => activeZone ? fqdnJoin(label || "dev", activeZone.name) : "", [label, activeZone]);
 
   const submit = () => {
+    if (!activeZone) return;
     const targets = [normalizeFqdn(ns1), normalizeFqdn(ns2)].filter(Boolean);
     if (!label.trim()) return notifications.show({ color: "red", title: "Missing subdomain", message: "Enter a label (dev)" });
     if (targets.some((t) => !t.endsWith("."))) return notifications.show({ color: "red", title: "NS must be FQDN", message: "End NS with a dot." });
@@ -69,50 +70,54 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
 
   return (
     <Drawer opened={opened} onClose={onClose} position="right" size="lg" title="Delegate subdomain">
-      <Stack>
-        <Paper withBorder p="md" radius="md">
-          <Text fw={700}>Parent zone</Text>
-          <Text size="sm" c="dimmed">{activeZone.name}</Text>
-        </Paper>
+      {!activeZone ? (
+        <Text c="dimmed">No zone selected</Text>
+      ) : (
+        <Stack>
+          <Paper withBorder p="md" radius="md">
+            <Text fw={700}>Parent zone</Text>
+            <Text size="sm" c="dimmed">{activeZone.name}</Text>
+          </Paper>
 
-        <Grid>
-          <Grid.Col span={{ base: 12, md: 6 }}>
-            <TextInput label="Subdomain label" value={label} onChange={(e) => setLabel(e.currentTarget.value)} />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 6 }}>
-            <Select
-              label="Child zone type"
-              value={childType}
-              onChange={(v) => setChildType((v as ZoneType) ?? "public")}
-              data={[
-                { value: "public", label: "Public" },
-                { value: "private", label: "Private" },
-              ]}
-              disabled={!createChild}
-            />
-          </Grid.Col>
-        </Grid>
+          <Grid>
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <TextInput label="Subdomain label" value={label} onChange={(e) => setLabel(e.currentTarget.value)} />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <Select
+                label="Child zone type"
+                value={childType}
+                onChange={(v) => setChildType((v as ZoneType) ?? "public")}
+                data={[
+                  { value: "public", label: "Public" },
+                  { value: "private", label: "Private" },
+                ]}
+                disabled={!createChild}
+              />
+            </Grid.Col>
+          </Grid>
 
-        <Text size="sm" c="dimmed">Child FQDN: {childFqdn}</Text>
+          <Text size="sm" c="dimmed">Child FQDN: {childFqdn}</Text>
 
-        <Paper withBorder p="md" radius="md">
-          <Text fw={700} mb="sm">Authoritative NS targets</Text>
-          <TextInput label="NS #1" value={ns1} onChange={(e) => setNs1(e.currentTarget.value)} />
-          <TextInput mt="sm" label="NS #2" value={ns2} onChange={(e) => setNs2(e.currentTarget.value)} />
-        </Paper>
+          <Paper withBorder p="md" radius="md">
+            <Text fw={700} mb="sm">Authoritative NS targets</Text>
+            <TextInput label="NS #1" value={ns1} onChange={(e) => setNs1(e.currentTarget.value)} />
+            <TextInput mt="sm" label="NS #2" value={ns2} onChange={(e) => setNs2(e.currentTarget.value)} />
+          </Paper>
 
-        <Switch
-          checked={createChild}
-          onChange={(e) => setCreateChild(e.currentTarget.checked)}
-          label="Also create hosted zone for child"
-          description="UI stub: creates a separate zone you can switch to in the sidebar."
-        />
+          <Switch
+            checked={createChild}
+            onChange={(e) => setCreateChild(e.currentTarget.checked)}
+            label="Also create hosted zone for child"
+            description="UI stub: creates a separate zone you can switch to in the sidebar."
+          />
 
-        <Group justify="flex-end">
-          <Button variant="default" onClick={onClose}>Cancel</Button>
-          <Button onClick={submit}>Create delegation</Button>
-        </Group>
-      </Stack>
+          <Group justify="flex-end">
+            <Button variant="default" onClick={onClose}>Cancel</Button>
+            <Button onClick={submit}>Create delegation</Button>
+          </Group>
+        </Stack>
+      )}
     </Drawer>
   );
 }

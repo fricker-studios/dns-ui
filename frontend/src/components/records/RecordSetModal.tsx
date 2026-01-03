@@ -37,7 +37,7 @@ export function RecordSetModal({
   const [values, setValues] = useState<RecordValue[]>([{ id: uid(), value: "" }]);
 
   useEffect(() => {
-    if (!opened) return;
+    if (!opened || !activeZone) return;
     if (!editRecordSet) {
       setType("A"); setLabel("@"); setTtl(""); setComment(""); setValues([{ id: uid(), value: "" }]);
       return;
@@ -50,11 +50,12 @@ export function RecordSetModal({
     setTtl(editRecordSet.ttl ?? "");
     setComment(editRecordSet.comment ?? "");
     setValues(editRecordSet.values.map((v) => ({ ...v })));
-  }, [opened, editRecordSet, activeZone.name]);
+  }, [opened, editRecordSet, activeZone]);
 
-  const fqdn = useMemo(() => fqdnJoin(label || "@", activeZone.name), [label, activeZone.name]);
+  const fqdn = useMemo(() => activeZone ? fqdnJoin(label || "@", activeZone.name) : "", [label, activeZone]);
 
   const save = () => {
+    if (!activeZone) return;
     const normalizedValues = values.map((v) => {
       let val = String(v.value ?? "").trim();
       if (["CNAME","NS","PTR","MX","SRV"].includes(type)) val = normalizeFqdn(val);
@@ -107,7 +108,7 @@ export function RecordSetModal({
             <Select label="Type" data={recordTypeOptions} value={type} onChange={(v) => setType((v as RecordType) ?? "A")} />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
-            <NumberInput label="TTL (seconds)" value={ttl} onChange={setTtl as any} placeholder={`${activeZone.defaultTtl}`} />
+            <NumberInput label="TTL (seconds)" value={ttl} onChange={setTtl as any} placeholder={`${activeZone?.defaultTtl ?? 300}`} />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 8 }}>
             <Textarea label="Comment" value={comment} onChange={(e) => setComment(e.currentTarget.value)} />

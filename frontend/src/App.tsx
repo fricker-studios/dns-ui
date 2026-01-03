@@ -12,8 +12,8 @@ import { useDnsStore } from "./state/DnsStore";
 export default function App() {
   const { state, activeZone } = useDnsStore();
   const pending = useMemo(
-    () => state.changes.filter((c) => c.zoneId === activeZone.id && c.status === "PENDING").length,
-    [state.changes, activeZone.id]
+    () => state.changes.filter((c) => c.zoneId === activeZone?.id && c.status === "PENDING").length,
+    [state.changes, activeZone?.id]
   );
 
   const [tab, setTab] = useState<string | null>("records");

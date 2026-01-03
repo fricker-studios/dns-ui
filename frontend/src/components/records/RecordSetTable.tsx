@@ -14,6 +14,8 @@ export function RecordSetTable({ recordSets }: { recordSets: RecordSet[] }) {
   const { activeZone, deleteRecordSet } = useDnsStore();
   const [edit, setEdit] = useState<RecordSet | null>(null);
 
+  if (!activeZone) return null;
+
   return (
     <>
       <ScrollArea type="hover">

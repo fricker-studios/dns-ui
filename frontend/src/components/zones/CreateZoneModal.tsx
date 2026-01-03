@@ -4,15 +4,18 @@ import { notifications } from "@mantine/notifications";
 import type { Zone, ZoneType } from "../../types/dns";
 import { normalizeFqdn, nowIso, uid } from "../../lib/bind";
 import { useDnsStore } from "../../state/DnsStore";
+import { useCreateZone } from "../../hooks";
+import { zoneToApiZoneCreate } from "../../lib/converters";
 
 export function CreateZoneModal({ opened, onClose }: { opened: boolean; onClose: () => void }) {
-  const { createZone } = useDnsStore();
+  const { createZone, refetchZones } = useDnsStore();
+  const { createZone: createZoneApi } = useCreateZone();
   const [name, setName] = useState("");
   const [type, setType] = useState<ZoneType>("public");
   const [tags, setTags] = useState<string[]>([]);
   const [dnssec, setDnssec] = useState(false);
 
-  const submit = () => {
+  const submit = async () => {
     const fqdn = normalizeFqdn(name);
     if (!fqdn || !fqdn.includes(".")) {
       notifications.show({ color: "red", title: "Invalid zone", message: "Use something like example.com" });
@@ -41,13 +44,25 @@ export function CreateZoneModal({ opened, onClose }: { opened: boolean; onClose:
       nameServers: [`ns1.${fqdn}`, `ns2.${fqdn}`, `ns3.${fqdn}`],
     };
 
-    createZone(z);
-    notifications.show({ color: "green", title: "Zone created", message: z.name });
-    setName("");
-    setTags([]);
-    setDnssec(false);
-    setType("public");
-    onClose();
+    // Call API
+    const apiPayload = zoneToApiZoneCreate(z);
+    const apiZone = await createZoneApi(apiPayload);
+    
+    if (apiZone) {
+      // Update local state
+      await createZone(z);
+      notifications.show({ color: "green", title: "Zone created", message: z.name });
+      
+      // Reset form
+      setName("");
+      setTags([]);
+      setDnssec(false);
+      setType("public");
+      onClose();
+      
+      // Refetch zones to get latest from API
+      refetchZones();
+    }
   };
 
   return (

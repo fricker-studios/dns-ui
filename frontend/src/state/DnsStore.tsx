@@ -1,19 +1,24 @@
-import React, { createContext, useContext, useMemo, useReducer } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useReducer } from "react";
 import type { AuditEvent, ChangeRequest, RecordSet, Zone } from "../types/dns";
-import { seedRecordSets, seedZones } from "../data/seed";
 import { nowIso, uid } from "../lib/bind";
+import { useZones, useRecordSets as useRecordSetsApi, useReplaceRecordSets } from "../hooks";
+import { apiZoneToZone, apiRecordSetToRecordSet, recordSetToApiRecordSet } from "../lib/converters";
+import { notifications } from "@mantine/notifications";
 
 type State = {
   zones: Zone[];
   recordSets: RecordSet[];
   changes: ChangeRequest[];
   audit: AuditEvent[];
-  activeZoneId: string;
+  activeZoneId: string | null;
+  activeZoneName: string | null;
 };
 
 type Action =
+  | { type: "zones/set"; zones: Zone[] }
   | { type: "zone/create"; zone: Zone }
-  | { type: "zone/setActive"; zoneId: string }
+  | { type: "zone/setActive"; zoneId: string; zoneName: string }
+  | { type: "recordsets/set"; recordSets: RecordSet[] }
   | { type: "record/upsert"; recordSet: RecordSet }
   | { type: "record/delete"; recordSetId: string }
   | { type: "change/add"; change: ChangeRequest }
@@ -22,30 +27,30 @@ type Action =
   | { type: "zone/update"; zone: Zone };
 
 const initialState: State = {
-  zones: seedZones,
-  recordSets: seedRecordSets,
+  zones: [],
+  recordSets: [],
   changes: [],
-  audit: [
-    {
-      id: uid(),
-      zoneId: "z-1",
-      at: "2025-12-22T02:34:00.000Z",
-      actor: "alex",
-      action: "Updated record",
-      detail: "Adjusted MX priorities for alexfricker.com.",
-    },
-  ],
-  activeZoneId: seedZones[0].id,
+  audit: [],
+  activeZoneId: null,
+  activeZoneName: null,
 };
 
 function reducer(state: State, action: Action): State {
   switch (action.type) {
+    case "zones/set":
+      return { ...state, zones: action.zones };
+    
     case "zone/create":
-      return { ...state, zones: [action.zone, ...state.zones], activeZoneId: action.zone.id };
+      return { ...state, zones: [action.zone, ...state.zones], activeZoneId: action.zone.id, activeZoneName: action.zone.name };
+    
     case "zone/update":
       return { ...state, zones: state.zones.map((z) => (z.id === action.zone.id ? action.zone : z)) };
+    
     case "zone/setActive":
-      return { ...state, activeZoneId: action.zoneId };
+      return { ...state, activeZoneId: action.zoneId, activeZoneName: action.zoneName };
+
+    case "recordsets/set":
+      return { ...state, recordSets: action.recordSets };
 
     case "record/upsert": {
       const exists = state.recordSets.some((r) => r.id === action.recordSet.id);
@@ -81,39 +86,68 @@ function reducer(state: State, action: Action): State {
 
 type Store = {
   state: State;
-  activeZone: Zone;
+  activeZone: Zone | null;
   zoneRecordSets: RecordSet[];
+  loading: boolean;
 
-  createZone: (zone: Zone) => void;
+  createZone: (zone: Zone) => Promise<void>;
   updateZone: (zone: Zone) => void;
-  setActiveZone: (zoneId: string) => void;
+  setActiveZone: (zoneId: string, zoneName: string) => void;
+  refetchZones: () => void;
+  refetchRecordSets: () => void;
 
   upsertRecordSet: (rs: RecordSet, summary: string, details: string[]) => void;
   deleteRecordSet: (recordSetId: string, summary: string, details: string[]) => void;
 
-  applyPendingChanges: () => void;
+  applyPendingChanges: () => Promise<void>;
 };
 
 const DnsStoreContext = createContext<Store | null>(null);
 
 export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+  
+  // API hooks
+  const { zones: apiZones, loading: zonesLoading, refetch: refetchZonesApi } = useZones();
+  const { recordsets: apiRecordSets, loading: recordsetsLoading, refetch: refetchRecordSetsApi } = useRecordSetsApi(state.activeZoneName);
+  const { replaceRecordSets } = useReplaceRecordSets();
+
+  // Sync API zones to state
+  useEffect(() => {
+    if (apiZones && apiZones.length > 0) {
+      const zones = apiZones.map(apiZoneToZone);
+      dispatch({ type: "zones/set", zones });
+      
+      // Set first zone as active if none selected
+      if (!state.activeZoneId && zones.length > 0) {
+        dispatch({ type: "zone/setActive", zoneId: zones[0].id, zoneName: zones[0].name });
+      }
+    }
+  }, [apiZones]);
+
+  // Sync API recordsets to state
+  useEffect(() => {
+    if (state.activeZoneId && apiRecordSets && apiRecordSets.length >= 0) {
+      const recordsets = apiRecordSets.map(rs => apiRecordSetToRecordSet(rs, state.activeZoneId!));
+      dispatch({ type: "recordsets/set", recordSets: recordsets });
+    }
+  }, [apiRecordSets, state.activeZoneId]);
 
   const activeZone = useMemo(() => {
     const z = state.zones.find((x) => x.id === state.activeZoneId);
-    return z ?? state.zones[0];
+    return z ?? null;
   }, [state.zones, state.activeZoneId]);
 
   const zoneRecordSets = useMemo(
-    () => state.recordSets.filter((r) => r.zoneId === activeZone.id),
-    [state.recordSets, activeZone.id]
+    () => activeZone ? state.recordSets.filter((r) => r.zoneId === activeZone.id) : [],
+    [state.recordSets, activeZone]
   );
 
   const api: Store = useMemo(() => {
     const log = (zoneId: string, action: string, detail: string) => {
       dispatch({
         type: "audit/add",
-        event: { id: uid(), zoneId, at: nowIso(), actor: "alex", action, detail },
+        event: { id: uid(), zoneId, at: nowIso(), actor: "user", action, detail },
       });
     };
 
@@ -128,15 +162,21 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
       state,
       activeZone,
       zoneRecordSets,
+      loading: zonesLoading || recordsetsLoading,
 
-      createZone: (zone) => {
+      createZone: async (zone) => {
         dispatch({ type: "zone/create", zone });
         log(zone.id, "Created zone", `${zone.type} zone ${zone.name}`);
+        // Refresh zones from API
+        refetchZonesApi();
       },
 
       updateZone: (zone) => dispatch({ type: "zone/update", zone }),
 
-      setActiveZone: (zoneId) => dispatch({ type: "zone/setActive", zoneId }),
+      setActiveZone: (zoneId, zoneName) => dispatch({ type: "zone/setActive", zoneId, zoneName }),
+
+      refetchZones: refetchZonesApi,
+      refetchRecordSets: refetchRecordSetsApi,
 
       upsertRecordSet: (rs, summary, details) => {
         dispatch({ type: "record/upsert", recordSet: rs });
@@ -153,13 +193,42 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
         }
       },
 
-      applyPendingChanges: () => {
-        dispatch({ type: "change/applyAll", zoneId: activeZone.id });
-        log(activeZone.id, "Applied changes", "Simulated: write zone + rndc reload");
+      applyPendingChanges: async () => {
+        if (!activeZone || !state.activeZoneName) {
+          notifications.show({ color: "red", title: "Error", message: "No active zone" });
+          return;
+        }
+
+        try {
+          // Convert frontend recordsets to API format and send to backend
+          const apiRecordSets = state.recordSets
+            .filter(rs => rs.zoneId === activeZone.id)
+            .map(recordSetToApiRecordSet);
+          
+          const success = await replaceRecordSets(state.activeZoneName, apiRecordSets);
+          
+          if (success) {
+            dispatch({ type: "change/applyAll", zoneId: activeZone.id });
+            log(activeZone.id, "Applied changes", "Wrote zone file and ran rndc reload");
+            notifications.show({ 
+              color: "green", 
+              title: "Changes applied", 
+              message: "Zone file updated and BIND reloaded" 
+            });
+            // Refresh recordsets from API
+            refetchRecordSetsApi();
+          }
+        } catch (err) {
+          notifications.show({ 
+            color: "red", 
+            title: "Error applying changes", 
+            message: String(err) 
+          });
+        }
       },
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, activeZone, zoneRecordSets]);
+  }, [state, activeZone, zoneRecordSets, zonesLoading, recordsetsLoading]);
 
   return <DnsStoreContext.Provider value={api}>{children}</DnsStoreContext.Provider>;
 }

@@ -29,6 +29,14 @@ export function RecordsPage({ initialFilter }: { initialFilter?: RecordType } = 
     });
   }, [zoneRecordSets, query, type, delegationsOnly]);
 
+  if (!activeZone) {
+    return (
+      <Card withBorder radius="md" p="lg">
+        <Text c="dimmed">No zone selected</Text>
+      </Card>
+    );
+  }
+
   return (
     <Card withBorder radius="md" p="lg">
       <Stack gap="sm">
