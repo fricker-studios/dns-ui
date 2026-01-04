@@ -31,6 +31,7 @@ RUN mkdir -p /etc/bind/managed-zones
 
 # Copy bind9 configuration files
 COPY bind/named.conf.local /etc/bind/named.conf.local
+COPY bind/named.conf.options /etc/bind/named.conf.options
 
 # Install python dependencies
 RUN pip install -U pip
