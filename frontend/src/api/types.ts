@@ -12,14 +12,19 @@ export interface ApiZone {
   options: Record<string, any>;
 }
 
+export interface ApiNameServer {
+  hostname: string;
+  ipv4: string;
+}
+
 export interface ApiZoneCreate {
   name: string;
   type?: ZoneType;
   default_ttl?: number;
   allow_transfer?: string[];
   also_notify?: string[];
-  primary_ns?: string;
-  admin_email?: string;
+  primary_ns: string;
+  nameservers?: ApiNameServer[];
 }
 
 export interface ApiRecordValue {

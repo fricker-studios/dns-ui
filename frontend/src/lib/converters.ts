@@ -3,7 +3,7 @@
  */
 
 import type { Zone, RecordSet, RecordValue } from "../types/dns";
-import type { ApiZone, ApiRecordSet, ApiRecordValue } from "../api/types";
+import type { ApiZone, ApiRecordSet, ApiRecordValue, ApiZoneCreate, ApiNameServer } from "../api/types";
 import { uid, nowIso, normalizeFqdn } from "../lib/bind";
 
 /**
@@ -36,15 +36,15 @@ export function apiZoneToZone(apiZone: ApiZone): Zone {
 /**
  * Convert frontend zone to API zone create
  */
-export function zoneToApiZoneCreate(zone: Partial<Zone>) {
+export function zoneToApiZoneCreate(zone: Partial<Zone>, nameservers: ApiNameServer[]): ApiZoneCreate {
   return {
     name: normalizeFqdn(zone.name || ""),
     type: zone.type || "public",
     default_ttl: zone.defaultTtl || 300,
     allow_transfer: zone.allowTransferTo || [],
     also_notify: zone.notifyTargets || [],
-    primary_ns: zone.soa?.primaryNs,
-    admin_email: zone.soa?.adminEmail,
+    primary_ns: zone.soa?.primaryNs || nameservers[0]?.hostname || "ns1.example.com.",
+    nameservers: nameservers,
   };
 }
 

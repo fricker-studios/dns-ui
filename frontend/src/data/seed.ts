@@ -20,7 +20,7 @@ export const seedZones: Zone[] = [
       expire: 1209600,
       minimum: 300,
     },
-    nameServers: ["ns1.alexfricker.com.", "ns2.alexfricker.com.", "ns3.alexfricker.com."],
+    nameServers: [{ hostname: "ns1.alexfricker.com.", ipv4: "" }, { hostname: "ns2.alexfricker.com.", ipv4: "" }, { hostname: "ns3.alexfricker.com.", ipv4: "" }],
   },
   {
     id: "z-2",
@@ -41,7 +41,7 @@ export const seedZones: Zone[] = [
       expire: 604800,
       minimum: 60,
     },
-    nameServers: ["ns1.lab.alexfricker.com."],
+    nameServers: [{ hostname: "ns1.lab.alexfricker.com.", ipv4: "" }],
   },
 ];
 

@@ -22,7 +22,8 @@ export function ExportsPage() {
         if (data) setApiZoneFile(data.text);
       });
     }
-  }, [activeZone, exportZoneFile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeZone]);
 
   if (!activeZone) {
     return (

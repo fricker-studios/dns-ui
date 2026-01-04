@@ -1,6 +1,14 @@
 # Created by https://www.toptal.com/developers/gitignore/api/python,django,react,node
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,django,react,node
 
+# Bind
+bind/managed-zones.conf
+bind/managed-zones/*
+bind/named.conf
+bind/named.conf.local
+bind/rndc.key
+
+
 ### Django ###
 *.log
 *.pot

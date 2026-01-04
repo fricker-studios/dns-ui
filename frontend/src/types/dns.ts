@@ -1,3 +1,5 @@
+import type { ApiNameServer } from "../api/types";
+
 export type ZoneType = "public" | "private";
 export type RecordType = "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "SRV" | "NS" | "PTR" | "CAA";
 
@@ -26,7 +28,7 @@ export type Zone = {
   };
 
   // authoritative NS list for the zone
-  nameServers: string[];
+  nameServers: ApiNameServer[];
 };
 
 export type RecordValue = {

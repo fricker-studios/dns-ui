@@ -1,11 +1,24 @@
 services:
-  dns:
-    image: dns
+  dns-console:
+    image: dns-console
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: dns_server
+    container_name: dns-console
+    # network_mode: host
     ports:
-      #- "53:53"
       - "8080:8080"
-    restart: unless-stopped
+      # - "53:53"
+    stdin_open: true
+    tty: true
+    environment:
+      - DNS_NAMED_CONF=/etc/bind/named.conf
+      - DNS_MANAGED_INCLUDE=/etc/bind/managed-zones.conf
+      - DNS_MANAGED_ZONE_DIR=/etc/bind/managed-zones
+      - DNS_RNDC=/usr/sbin/rndc
+      - DNS_NAMED_CHECKCONF=/usr/bin/named-checkconf
+      - DNS_NAMED_CHECKZONE=/usr/bin/named-checkzone
+    volumes:
+      - ./bind/managed-zones.conf:/etc/bind/managed-zones.conf:rw
+      - ./bind/managed-zones:/etc/bind/managed-zones:rw
+      - ./bind/rndc.key:/etc/bind/rndc.key:ro

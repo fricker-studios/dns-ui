@@ -47,6 +47,10 @@ class RecordSet(BaseModel):
         return normalize_fqdn(v)
 
 
+class NameServer(BaseModel):
+    hostname: str
+    ipv4: str
+
 class ZoneCreate(BaseModel):
     name: str
     type: ZoneType = "public"
@@ -57,8 +61,8 @@ class ZoneCreate(BaseModel):
     also_notify: list[str] = Field(default_factory=list)
 
     # SOA
-    primary_ns: str | None = None
-    admin_email: str | None = None
+    primary_ns: str
+    nameservers: list[NameServer] = Field(default_factory=list)
 
     @field_validator("name")
     @classmethod

@@ -34,7 +34,14 @@ def create_zone(payload: ZoneCreate):
     zone_name = payload.name  # already normalized in model
     zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}")
     # Create an empty zone file (with minimal SOA/NS)
-    write_zone_file(zone_name, zone_file, recordsets=[], default_ttl=payload.default_ttl)
+    write_zone_file(
+        zone_name,
+        zone_file,
+        recordsets=[],
+        default_ttl=payload.default_ttl,
+        primary_ns=payload.primary_ns,
+        nameservers=payload.nameservers,
+    )
 
     # Add/replace stanza in managed include
     upsert_zone_stanza(

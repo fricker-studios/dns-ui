@@ -59,7 +59,7 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
           expire: 1209600,
           minimum: 300,
         },
-        nameServers: targets,
+        nameServers: targets.map((t) => ({ hostname: t, ipv4: "" })), // IPv4 is a UI stub
       };
       createZone(z);
     }

@@ -1,5 +1,5 @@
 POETRY_VERSION=2.2.1
-APP_NAME=dns
+APP_NAME=dns-console
 
 python-env:
 	# Create virtual environment if it doesn't exist
@@ -28,14 +28,14 @@ build:
 	docker build -t $(APP_NAME) .
 
 runserver: build
-	docker compose up -d dns
+	docker compose up -d $(APP_NAME)
 
 pretty:
-	docker compose up -d api
-	docker compose run --rm api black .
+	docker compose up -d $(APP_NAME)
+	docker compose run --rm $(APP_NAME) black .
 	npm --prefix=frontend run prettier:write
 
 lint:
-	docker compose up -d api
-	docker compose run --rm api flake8 .
+	docker compose up -d $(APP_NAME)
+	docker compose run --rm $(APP_NAME) flake8 .
 	npm --prefix=frontend run eslint

@@ -4,7 +4,7 @@ from fastapi import APIRouter, HTTPException
 
 from backend.models import RecordSet
 from backend.bind_files import read_managed_include, parse_managed_zones, validate_zone, rndc_reload
-from backend.dns_zone import read_zone_file, write_zone_file
+from backend.dns_zone import read_zone_file, write_zone_recordsets
 from backend.settings import settings
 
 router = APIRouter(prefix="/zones/{zone_name}/recordsets", tags=["recordsets"])
@@ -36,7 +36,7 @@ def replace_recordsets(zone_name: str, recordsets: list[RecordSet]):
 
     # Normalize: ensure all names are fqdn
     # (Your frontend should send fqdn already; keep it simple here)
-    write_zone_file(zone_fqdn, zone_file, recordsets, default_ttl=settings.default_ttl)
+    write_zone_recordsets(zone_fqdn, zone_file, recordsets)
 
     # Validate zone + reload it
     validate_zone(zone_fqdn.rstrip("."), zone_file)
