@@ -50,5 +50,8 @@ COPY --from=ui-build /ui/dist /usr/share/nginx/html
 # nginx config
 COPY nginx/default.conf /etc/nginx/sites-available/default
 
+# Expose ports
+EXPOSE 8000 53/udp 53/tcp
+
 ENTRYPOINT [ "/app/entrypoint.sh" ]
-CMD ["uvicorn", "backend.main:app", "--reload", "--port", "8000"]
+CMD ["uvicorn", "backend.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
