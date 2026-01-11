@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import {
   AppShell,
   Box,
+  Burger,
   Button,
   Container,
   Drawer,
@@ -11,6 +12,7 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import {
   IconNetwork,
   IconPlus,
@@ -38,6 +40,11 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
 
   const [recordModalOpen, setRecordModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [mobileNavOpened, { toggle: toggleMobileNav, close: closeMobileNav }] =
+    useDisclosure();
+
+  // Media query for responsive behavior
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   // Detect OS for keyboard shortcut display
   const isMac = useMemo(
@@ -65,12 +72,22 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
     <>
       <AppShell
         padding="md"
-        header={{ height: 64 }}
-        navbar={{ width: 320, breakpoint: "sm" }}
+        header={{ height: isMobile ? 60 : 64 }}
+        navbar={{
+          width: 320,
+          breakpoint: "sm",
+          collapsed: { mobile: !mobileNavOpened },
+        }}
       >
         <AppShell.Header>
-          <Group h="100%" px="md" justify="space-between">
-            <Group gap="md">
+          <Group h="100%" px="md" justify="space-between" wrap="nowrap">
+            <Group gap="xs" wrap="nowrap">
+              <Burger
+                opened={mobileNavOpened}
+                onClick={toggleMobileNav}
+                hiddenFrom="sm"
+                size="sm"
+              />
               <ThemeIcon size="lg" radius="md" variant="light">
                 <IconNetwork size={18} />
               </ThemeIcon>
@@ -78,21 +95,26 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 <Title order={4} style={{ lineHeight: 1.1 }}>
                   DNS Console
                 </Title>
-                <Text size="xs" c="dimmed">
-                  BIND-style zones • recordsets • delegation • exports • changes
-                  {" · "}
-                  <Kbd>{modifierKey}</Kbd>+<Kbd>R</Kbd> create record
-                </Text>
+                {!isMobile && (
+                  <Text size="xs" c="dimmed">
+                    BIND-style zones • recordsets • delegation • exports •
+                    changes
+                    {" · "}
+                    <Kbd>{modifierKey}</Kbd>+<Kbd>R</Kbd> create record
+                  </Text>
+                )}
               </Box>
             </Group>
 
-            <Group>
-              <Button
-                leftSection={<IconPlus size={16} />}
-                onClick={() => setRecordModalOpen(true)}
-              >
-                Create record
-              </Button>
+            <Group gap="xs" wrap="nowrap">
+              {!isMobile && (
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  onClick={() => setRecordModalOpen(true)}
+                >
+                  Create record
+                </Button>
+              )}
               <Button
                 variant="light"
                 leftSection={<IconRefresh size={16} />}
@@ -100,28 +122,61 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 onClick={() => {
                   applyPendingChanges();
                 }}
+                size={isMobile ? "compact-sm" : "sm"}
               >
-                Apply changes {pending ? `(${pending})` : ""}
+                {isMobile ? `(${pending})` : `Apply changes ${pending ? `(${pending})` : ""}`}
               </Button>
-              <Button
-                variant="default"
-                leftSection={<IconSettings size={16} />}
-                onClick={() => setSettingsOpen(true)}
-              >
-                Settings
-              </Button>
+              {!isMobile && (
+                <Button
+                  variant="default"
+                  leftSection={<IconSettings size={16} />}
+                  onClick={() => setSettingsOpen(true)}
+                  size="sm"
+                >
+                  Settings
+                </Button>
+              )}
             </Group>
           </Group>
         </AppShell.Header>
 
         <AppShell.Navbar p="md">
-          <ZonesSidebar />
+          <ZonesSidebar onZoneSelect={isMobile ? closeMobileNav : undefined} />
         </AppShell.Navbar>
 
         <AppShell.Main>
           <Container size="xl">{children}</Container>
         </AppShell.Main>
       </AppShell>
+
+      {isMobile && (
+        <Group
+          style={{
+            position: "fixed",
+            bottom: 16,
+            right: 16,
+            gap: 8,
+            zIndex: 100,
+          }}
+        >
+          <Button
+            size="lg"
+            radius="xl"
+            leftSection={<IconPlus size={20} />}
+            onClick={() => setRecordModalOpen(true)}
+          >
+            Record
+          </Button>
+          <Button
+            size="lg"
+            radius="xl"
+            variant="default"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <IconSettings size={20} />
+          </Button>
+        </Group>
+      )}
 
       <RecordSetModal
         opened={recordModalOpen}

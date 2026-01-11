@@ -20,7 +20,7 @@ import { useDnsStore } from "../../state/DnsStore";
 import { humanizeZoneName } from "../../lib/bind";
 import { CreateZoneModal } from "./CreateZoneModal";
 
-export function ZonesSidebar() {
+export function ZonesSidebar({ onZoneSelect }: { onZoneSelect?: () => void }) {
   const {
     state,
     setActiveZone,
@@ -50,6 +50,11 @@ export function ZonesSidebar() {
       return a.type === "forward" ? -1 : 1;
     });
   }, [state.zones, query]);
+
+  const handleZoneClick = (zoneId: string, zoneName: string) => {
+    setActiveZone(zoneId, zoneName);
+    onZoneSelect?.();
+  };
 
   if (state.zones.length === 0) {
     return (
@@ -117,7 +122,7 @@ export function ZonesSidebar() {
                   p="sm"
                   radius="md"
                   style={{ cursor: "pointer", opacity: selected ? 1 : 0.95 }}
-                  onClick={() => setActiveZone(z.id, z.name)}
+                  onClick={() => handleZoneClick(z.id, z.name)}
                 >
                   <Stack gap="xs">
                     <Text fw={700}>{humanizeZoneName(z.name)}</Text>
