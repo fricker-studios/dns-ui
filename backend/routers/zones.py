@@ -29,7 +29,7 @@ def list_zones():
         zone_type = (
             "reverse"
             if (".in-addr.arpa" in zname or ".ip6.arpa" in zname)
-            else "public"
+            else "forward"
         )
         out.append(
             Zone(name=zname, type=zone_type, file_path=stanza.file_path, options={})

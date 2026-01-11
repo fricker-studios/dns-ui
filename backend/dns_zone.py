@@ -125,8 +125,25 @@ def write_zone_file(
     lines: list[str] = []
     lines.append(f"$TTL {default_ttl}")
 
+    # Detect if this is a reverse zone
+    is_reverse = ".in-addr.arpa" in zone_name or ".ip6.arpa" in zone_name
+
     # Minimal SOA (serial will be bumped on rewrite)
-    lines.append(f"@ IN SOA {primary_ns}.{zone_name} hostmaster.{zone_name} (")
+    # For reverse zones, use FQDN nameservers and get admin domain from first NS
+    if is_reverse:
+        # Nameservers should be FQDNs for reverse zones
+        admin_domain = nameservers[0].hostname if nameservers else zone_name
+        # Extract base domain from FQDN (e.g., ns1.example.com -> example.com)
+        parts = admin_domain.rstrip(".").split(".")
+        if len(parts) >= 2:
+            admin_domain = ".".join(parts[-2:]) + "."
+        else:
+            admin_domain = zone_name
+        lines.append(f"@ IN SOA {normalize_fqdn(nameservers[0].hostname)} hostmaster.{admin_domain} (")
+    else:
+        # For forward zones, append hostname to zone name
+        lines.append(f"@ IN SOA {primary_ns}.{zone_name} hostmaster.{zone_name} (")
+    
     lines.append(f"    {serial} ; serial")
     lines.append("    3600 ; refresh")
     lines.append("    600 ; retry")
@@ -136,13 +153,19 @@ def write_zone_file(
 
     # Default NS records
     for ns in nameservers:
-        lines.append(f"@ IN NS {ns.hostname}.{zone_name}")
+        if is_reverse:
+            # Use FQDN for reverse zones
+            lines.append(f"@ IN NS {normalize_fqdn(ns.hostname)}")
+        else:
+            # Append to zone name for forward zones
+            lines.append(f"@ IN NS {ns.hostname}.{zone_name}")
     lines.append("")
 
-    # A records for nameservers
-    for ns in nameservers:
-        lines.append(f"{ns.hostname} IN A {ns.ipv4}")
-    lines.append("")
+    # A records for nameservers (only for forward zones)
+    if not is_reverse:
+        for ns in nameservers:
+            lines.append(f"{ns.hostname} IN A {ns.ipv4}")
+        lines.append("")
 
     # Records
     for rs in sorted(recordsets, key=lambda r: (r.name, r.type)):

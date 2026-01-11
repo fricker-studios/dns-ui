@@ -4,7 +4,7 @@ export const seedZones: Zone[] = [
   {
     id: "z-1",
     name: "alexfricker.com.",
-    type: "public",
+    type: "forward",
     comment: "Primary public zone for web + services",
     tags: ["prod", "public", "brand"],
     createdAt: "2025-08-14T13:12:00.000Z",
@@ -29,7 +29,7 @@ export const seedZones: Zone[] = [
   {
     id: "z-2",
     name: "lab.alexfricker.com.",
-    type: "private",
+    type: "forward",
     comment: "Homelab + internal services",
     tags: ["lab", "private"],
     createdAt: "2025-11-02T19:02:00.000Z",

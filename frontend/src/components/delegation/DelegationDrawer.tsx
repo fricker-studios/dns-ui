@@ -29,7 +29,7 @@ export function DelegationDrawer({
   const [ns1, setNs1] = useState("ns1.devns.example.net.");
   const [ns2, setNs2] = useState("ns2.devns.example.net.");
   const [createChild, setCreateChild] = useState(true);
-  const [childType, setChildType] = useState<ZoneType>("public");
+  const [childType, setChildType] = useState<ZoneType>("forward");
 
   const childFqdn = useMemo(
     () => (activeZone ? fqdnJoin(label || "dev", activeZone.name) : ""),

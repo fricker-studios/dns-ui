@@ -40,7 +40,7 @@ export function CreateZoneModal({
   const { createZone, refetchZones } = useDnsStore();
   const { createZone: createZoneApi } = useCreateZone();
   const [name, setName] = useState("");
-  const [type, setType] = useState<ZoneType>("public");
+  const [type, setType] = useState<ZoneType>("forward");
   const [tags, setTags] = useState<string[]>([]);
   const [dnssec, setDnssec] = useState(false);
   const [nameservers, setNameservers] = useState<NameServerEntry[]>([
@@ -94,6 +94,22 @@ export function CreateZoneModal({
         message: "Add at least one nameserver",
       });
       return;
+    }
+
+    // For reverse zones, validate that nameservers are FQDNs
+    if (type === "reverse") {
+      const invalidNs = validNameservers.find(
+        (ns) => !ns.hostname.includes(".") || ns.hostname === ".",
+      );
+      if (invalidNs) {
+        notifications.show({
+          color: "red",
+          title: "Invalid nameserver",
+          message:
+            "Reverse zones require fully qualified nameserver hostnames (e.g., ns1.example.com)",
+        });
+        return;
+      }
     }
 
     const primaryNs = nameservers.find((ns) => ns.id === primaryNsId);
@@ -155,7 +171,7 @@ export function CreateZoneModal({
     setName("");
     setTags([]);
     setDnssec(false);
-    setType("public");
+    setType("forward");
     setNameservers([{ id: uid(), hostname: "", ipv4: "" }]);
     setPrimaryNsId("");
     setReverseNetwork("");
@@ -238,8 +254,7 @@ export function CreateZoneModal({
           value={type}
           onChange={(v) => setType(v as ZoneType)}
           data={[
-            { value: "public", label: "Public" },
-            { value: "private", label: "Private" },
+            { value: "forward", label: "Forward" },
             { value: "reverse", label: "Reverse" },
           ]}
         />
@@ -326,7 +341,11 @@ export function CreateZoneModal({
                     <Grid.Col span={7}>
                       <TextInput
                         label={`NS ${index + 1} Hostname`}
-                        placeholder="ns1"
+                        placeholder={
+                          type === "reverse"
+                            ? "ns1.example.com"
+                            : "ns1"
+                        }
                         value={ns.hostname}
                         onChange={(e) =>
                           updateNameserver(
@@ -334,6 +353,11 @@ export function CreateZoneModal({
                             "hostname",
                             e.currentTarget.value,
                           )
+                        }
+                        description={
+                          type === "reverse"
+                            ? "Must be a fully qualified domain name"
+                            : undefined
                         }
                       />
                     </Grid.Col>

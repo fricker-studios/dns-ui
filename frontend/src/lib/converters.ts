@@ -48,7 +48,7 @@ export function zoneToApiZoneCreate(
 ): ApiZoneCreate {
   return {
     name: normalizeFqdn(zone.name || ""),
-    type: zone.type || "public",
+    type: zone.type || "forward",
     default_ttl: zone.defaultTtl || 300,
     allow_transfer: zone.allowTransferTo || [],
     also_notify: zone.notifyTargets || [],

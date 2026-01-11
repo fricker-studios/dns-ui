@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 
-ZoneType = Literal["public", "private", "reverse"]
+ZoneType = Literal["forward", "reverse"]
 RecordType = Literal["A", "AAAA", "CNAME", "MX", "TXT", "SRV", "NS", "PTR", "CAA"]
 
 
@@ -17,7 +17,7 @@ def normalize_fqdn(s: str) -> str:
 
 class Zone(BaseModel):
     name: str  # example.com.
-    type: ZoneType = "public"  # UI concept; BIND doesn't care unless "view" setup
+    type: ZoneType = "forward"  # forward or reverse
     file_path: str
     options: dict = Field(default_factory=dict)  # allow-transfer, also-notify, etc.
 

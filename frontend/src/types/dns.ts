@@ -1,6 +1,6 @@
 import type { ApiNameServer } from "../api/types";
 
-export type ZoneType = "public" | "private" | "reverse";
+export type ZoneType = "forward" | "reverse";
 export type RecordType =
   | "A"
   | "AAAA"

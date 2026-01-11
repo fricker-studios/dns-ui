@@ -2,22 +2,19 @@ import { useMemo, useState } from "react";
 import {
   ActionIcon,
   Badge,
-  Box,
   Group,
   Paper,
   ScrollArea,
   Stack,
   Text,
   TextInput,
-  ThemeIcon,
   Title,
 } from "@mantine/core";
 import {
-  IconGlobe,
-  IconLock,
   IconPlus,
   IconSearch,
   IconArrowBack,
+  IconArrowForward,
 } from "@tabler/icons-react";
 import { useDnsStore } from "../../state/DnsStore";
 import { humanizeZoneName } from "../../lib/bind";
@@ -99,10 +96,8 @@ export function ZonesSidebar() {
               const isReverse = z.type === "reverse";
               const icon = isReverse ? (
                 <IconArrowBack size={14} />
-              ) : z.type === "public" ? (
-                <IconGlobe size={14} />
               ) : (
-                <IconLock size={14} />
+                <IconArrowForward size={14} />
               );
               return (
                 <Paper
@@ -113,15 +108,13 @@ export function ZonesSidebar() {
                   style={{ cursor: "pointer", opacity: selected ? 1 : 0.95 }}
                   onClick={() => setActiveZone(z.id, z.name)}
                 >
-                  <Group justify="space-between" align="flex-start">
-                    <Box>
-                      <Group gap="xs">
+                      <Stack gap="xs">
                         <Text fw={700}>{humanizeZoneName(z.name)}</Text>
                         <Badge variant="light" leftSection={icon}>
                           {z.type}
                         </Badge>
-                      </Group>
-                      {z.comment ? (
+                      </Stack>
+                      {/* {z.comment ? (
                         <Text size="xs" c="dimmed" mt={6} lineClamp={1}>
                           {z.comment}
                         </Text>
@@ -132,18 +125,7 @@ export function ZonesSidebar() {
                             {t}
                           </Badge>
                         ))}
-                      </Group>
-                    </Box>
-                    <ThemeIcon variant="light" radius="md">
-                      {isReverse ? (
-                        <IconArrowBack size={16} />
-                      ) : z.type === "public" ? (
-                        <IconGlobe size={16} />
-                      ) : (
-                        <IconLock size={16} />
-                      )}
-                    </ThemeIcon>
-                  </Group>
+                      </Group> */}
                 </Paper>
               );
             })}
