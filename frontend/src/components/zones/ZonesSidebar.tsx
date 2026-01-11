@@ -31,13 +31,24 @@ export function ZonesSidebar() {
 
   const zones = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return state.zones;
-    return state.zones.filter(
-      (z) =>
-        z.name.toLowerCase().includes(q) ||
-        z.tags.some((t) => t.toLowerCase().includes(q)) ||
-        (z.comment ?? "").toLowerCase().includes(q),
-    );
+    let filtered = state.zones;
+    
+    if (q) {
+      filtered = state.zones.filter(
+        (z) =>
+          z.name.toLowerCase().includes(q) ||
+          z.tags.some((t) => t.toLowerCase().includes(q)) ||
+          (z.comment ?? "").toLowerCase().includes(q),
+      );
+    }
+    
+    // Sort: forward zones first, then reverse zones, alphabetically within each group
+    return filtered.sort((a, b) => {
+      if (a.type === b.type) {
+        return a.name.localeCompare(b.name);
+      }
+      return a.type === "forward" ? -1 : 1;
+    });
   }, [state.zones, query]);
 
   if (state.zones.length === 0) {
