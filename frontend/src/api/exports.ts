@@ -15,6 +15,14 @@ export const exportsApi = {
   },
 
   /**
+   * Export zone stanza (named.conf snippet) as text
+   */
+  stanza: (zoneName: string) => {
+    const encoded = encodeURIComponent(zoneName);
+    return api.get<ApiZoneFileExport>(`/zones/${encoded}/exports/stanza`);
+  },
+
+  /**
    * Export recordsets as JSON
    */
   recordsets: (zoneName: string) => {

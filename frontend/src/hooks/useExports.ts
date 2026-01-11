@@ -36,6 +36,32 @@ export function useZoneFileExport() {
   return { exportZoneFile, loading, error };
 }
 
+export function useZoneStanzaExport() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const exportZoneStanza = async (
+    zoneName: string,
+  ): Promise<ApiZoneFileExport | null> => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await exportsApi.stanza(zoneName);
+      return data;
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : "Failed to export zone stanza";
+      setError(message);
+      console.error("Error exporting zone stanza:", err);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { exportZoneStanza, loading, error };
+}
+
 export function useRecordSetsExport() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

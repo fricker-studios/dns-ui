@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Button,
   Card,
@@ -10,28 +10,23 @@ import {
   Text,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
-import { computeNamedConfSnippet, computeZoneFile } from "../../lib/bind";
 import { useDnsStore } from "../../state/DnsStore";
-import { useZoneFileExport } from "../../hooks";
+import { useZoneFileExport, useZoneStanzaExport } from "../../hooks";
 
 export function ExportsPage() {
-  const { activeZone, zoneRecordSets } = useDnsStore();
-  const { exportZoneFile, loading } = useZoneFileExport();
+  const { activeZone } = useDnsStore();
+  const { exportZoneFile, loading: zoneLoading } = useZoneFileExport();
+  const { exportZoneStanza, loading: stanzaLoading } = useZoneStanzaExport();
   const [apiZoneFile, setApiZoneFile] = useState<string>("");
-
-  const localZoneFile = useMemo(
-    () => (activeZone ? computeZoneFile(activeZone, zoneRecordSets) : ""),
-    [activeZone, zoneRecordSets],
-  );
-  const named = useMemo(
-    () => (activeZone ? computeNamedConfSnippet(activeZone) : ""),
-    [activeZone],
-  );
+  const [apiStanza, setApiStanza] = useState<string>("");
 
   useEffect(() => {
     if (activeZone) {
       exportZoneFile(activeZone.name).then((data) => {
         if (data) setApiZoneFile(data.text);
+      });
+      exportZoneStanza(activeZone.name).then((data) => {
+        if (data) setApiStanza(data.text);
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,22 +48,22 @@ export function ExportsPage() {
           variant="light"
           onClick={() =>
             notifications.show({
-              title: "Tip",
-              message: "Wire this to download/copy in a real app.",
+              title: "Coming Soon",
+              message: "Download/copy functionality coming soon!",
             })
           }
         >
-          Actions (stub)
+          Actions
         </Button>
       </Group>
 
       <Grid>
         <Grid.Col span={{ base: 12, md: 6 }}>
           <Text fw={700} mb="xs">
-            Zone file (from API)
+            Zone file
           </Text>
           <ScrollArea h={420} type="hover">
-            {loading ? (
+            {zoneLoading ? (
               <Loader size="sm" />
             ) : (
               <Code block style={{ whiteSpace: "pre" }}>
@@ -79,22 +74,16 @@ export function ExportsPage() {
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
           <Text fw={700} mb="xs">
-            Zone file (local preview)
+            named.conf stanza
           </Text>
           <ScrollArea h={420} type="hover">
-            <Code block style={{ whiteSpace: "pre" }}>
-              {localZoneFile}
-            </Code>
-          </ScrollArea>
-        </Grid.Col>
-        <Grid.Col span={{ base: 12 }}>
-          <Text fw={700} mb="xs">
-            named.conf snippet
-          </Text>
-          <ScrollArea h={280} type="hover">
-            <Code block style={{ whiteSpace: "pre" }}>
-              {named}
-            </Code>
+            {stanzaLoading ? (
+              <Loader size="sm" />
+            ) : (
+              <Code block style={{ whiteSpace: "pre" }}>
+                {apiStanza || "No data"}
+              </Code>
+            )}
           </ScrollArea>
         </Grid.Col>
       </Grid>

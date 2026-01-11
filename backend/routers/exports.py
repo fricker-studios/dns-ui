@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
-from backend.bind_files import read_managed_include, parse_managed_zones
+from backend.bind_files import read_managed_include, parse_managed_zones, build_zone_stanza
 from backend.dns_zone import read_zone_file
 
 router = APIRouter(prefix="/zones/{zone_name}/exports", tags=["exports"])
@@ -15,18 +15,31 @@ def _resolve(zone_name: str):
     stanza = zones.get(zn)
     if not stanza:
         raise HTTPException(404, "Zone not found (managed)")
-    return zn + ".", stanza.file_path
+    return zn + ".", stanza
 
 
 @router.get("/zonefile")
 def export_zone_file(zone_name: str):
-    zone_fqdn, zone_file = _resolve(zone_name)
-    with open(zone_file, "r") as f:
+    zone_fqdn, stanza = _resolve(zone_name)
+    with open(stanza.file_path, "r") as f:
         return {"zone": zone_fqdn, "text": f.read()}
+
+
+@router.get("/stanza")
+def export_zone_stanza(zone_name: str):
+    """Export the named.conf zone stanza"""
+    zone_fqdn, stanza = _resolve(zone_name)
+    stanza_text = build_zone_stanza(
+        zone_name=stanza.zone,
+        file_path=stanza.file_path,
+        allow_transfer=stanza.allow_transfer,
+        also_notify=stanza.also_notify,
+    )
+    return {"zone": zone_fqdn, "text": stanza_text}
 
 
 @router.get("/recordsets")
 def export_recordsets(zone_name: str):
-    zone_fqdn, zone_file = _resolve(zone_name)
-    rs = read_zone_file(zone_fqdn, zone_file)
+    zone_fqdn, stanza = _resolve(zone_name)
+    rs = read_zone_file(zone_fqdn, stanza.file_path)
     return {"zone": zone_fqdn, "recordsets": [r.model_dump() for r in rs]}

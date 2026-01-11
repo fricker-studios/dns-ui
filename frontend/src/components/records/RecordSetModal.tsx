@@ -76,6 +76,13 @@ export function RecordSetModal({
     setValues(editRecordSet.values.map((v) => ({ ...v })));
   }, [opened, editRecordSet, activeZone]);
 
+  // When switching to CNAME, limit to single value
+  useEffect(() => {
+    if (type === "CNAME" && values.length > 1) {
+      setValues([values[0]]);
+    }
+  }, [type]);
+
   const fqdn = useMemo(
     () => (activeZone ? fqdnJoin(label || "@", activeZone.name) : ""),
     [label, activeZone],
@@ -139,7 +146,7 @@ export function RecordSetModal({
       opened={opened}
       onClose={onClose}
       title={mode === "create" ? "Create record" : "Edit record"}
-      size="lg"
+      size="xl"
     >
       <Stack>
         <Grid>
@@ -187,41 +194,35 @@ export function RecordSetModal({
 
         <Stack gap="xs">
           {values.map((v, idx) => (
-            <Grid key={v.id} align="end" justify="start">
-              <Grid.Col
-                span={{
-                  base: 12,
-                  md: type === "MX" || type === "SRV" ? 6 : 10,
-                }}
-              >
-                <TextInput
-                  label={`Value #${idx + 1}`}
-                  value={v.value}
-                  onChange={(e) =>
-                    setValues((prev) =>
-                      prev.map((x) =>
-                        x.id === v.id
-                          ? { ...x, value: e.currentTarget.value }
-                          : x,
-                      ),
-                    )
-                  }
-                  placeholder={
-                    type === "A"
-                      ? "203.0.113.10"
-                      : type === "AAAA"
-                        ? "2001:db8::10"
-                        : type === "TXT"
-                          ? "v=spf1 include:_spf.google.com ~all"
-                          : type === "CAA"
-                            ? '0 issue "letsencrypt.org"'
-                            : "target.example.com."
-                  }
-                />
-              </Grid.Col>
+            <Group key={v.id} align="end" justify="start">
+              <TextInput
+                flex={1}
+                miw={100}
+                label={`Value #${idx + 1}`}
+                value={v.value}
+                onChange={(e) =>
+                  setValues((prev) =>
+                    prev.map((x) =>
+                      x.id === v.id
+                        ? { ...x, value: e.currentTarget.value }
+                        : x,
+                    ),
+                  )
+                }
+                placeholder={
+                  type === "A"
+                    ? "203.0.113.10"
+                    : type === "AAAA"
+                      ? "2001:db8::10"
+                      : type === "TXT"
+                        ? "v=spf1 include:_spf.google.com ~all"
+                        : type === "CAA"
+                          ? '0 issue "letsencrypt.org"'
+                          : "target.example.com."
+                }
+              />
 
               {type === "MX" ? (
-                <Grid.Col span={{ base: 12, md: 3 }}>
                   <NumberInput
                     label="Priority"
                     value={v.priority ?? 10}
@@ -235,14 +236,13 @@ export function RecordSetModal({
                       )
                     }
                   />
-                </Grid.Col>
               ) : null}
 
               {type === "SRV" ? (
                 <>
-                  <Grid.Col span={{ base: 12, md: 2 }}>
                     <NumberInput
                       label="Priority"
+                      w={100}
                       value={v.priority ?? 10}
                       onChange={(val) =>
                         setValues((p) =>
@@ -254,10 +254,9 @@ export function RecordSetModal({
                         )
                       }
                     />
-                  </Grid.Col>
-                  <Grid.Col span={{ base: 12, md: 2 }}>
                     <NumberInput
                       label="Weight"
+                      w={100}
                       value={v.weight ?? 5}
                       onChange={(val) =>
                         setValues((p) =>
@@ -269,10 +268,9 @@ export function RecordSetModal({
                         )
                       }
                     />
-                  </Grid.Col>
-                  <Grid.Col span={{ base: 12, md: 2 }}>
                     <NumberInput
                       label="Port"
+                      w={100}
                       value={v.port ?? 443}
                       onChange={(val) =>
                         setValues((p) =>
@@ -286,32 +284,32 @@ export function RecordSetModal({
                       min={0}
                       max={65535}
                     />
-                  </Grid.Col>
                 </>
               ) : null}
 
-              <Grid.Col span={{ base: 12, md: 2 }}>
+              {(type !== "CNAME" && values.length > 1) && (
                 <Button
-                  variant="default"
-                  color="red"
-                  disabled={values.length === 1}
-                  onClick={() =>
-                    setValues((p) => p.filter((x) => x.id !== v.id))
-                  }
-                >
-                  Remove
+                    variant="default"
+                    color="red"
+                    onClick={() =>
+                      setValues((p) => p.filter((x) => x.id !== v.id))
+                    }
+                  >
+                    Remove
                 </Button>
-              </Grid.Col>
-            </Grid>
+            )}
+            </Group>
           ))}
-          <Group justify="space-between">
-            <Button
-              variant="light"
-              onClick={() => setValues((p) => [...p, { id: uid(), value: "" }])}
-            >
-              Add value
-            </Button>
-            <Group>
+          <Group justify="space-between" mt={5}>
+            {type !== "CNAME" && (
+              <Button
+                variant="light"
+                onClick={() => setValues((p) => [...p, { id: uid(), value: "" }])}
+              >
+                Add value
+              </Button>
+            )}
+            <Group ml={type === "CNAME" ? "auto" : undefined}>
               <Button variant="default" onClick={onClose}>
                 Cancel
               </Button>
