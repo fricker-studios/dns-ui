@@ -21,4 +21,5 @@ services:
     volumes:
       - ./bind/managed-zones.conf:/etc/bind/managed-zones.conf:rw
       - ./bind/managed-zones:/etc/bind/managed-zones:rw
+      - ./bind/named.conf.options:/etc/bind/named.conf.options:rw
       - ./bind/rndc.key:/etc/bind/rndc.key:ro

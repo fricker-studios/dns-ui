@@ -6,7 +6,7 @@
 
 2. Copy config files:
   - `cp bind/.example/managed-zones.conf bind/managed-zones.conf`
-  - `cp bind/.example/rndc.key bind/rndc.key`
+  - `cp bind/.example/rndc.key bind/rndc.key` or `rndc-confgen -a -c ./bind/rndc.key`
 
 3. Start services:
   - `sudo docker compose up -d`
