@@ -6,6 +6,7 @@ import {
   IconGitPullRequest,
   IconHistory,
   IconServer,
+  IconSettings,
 } from "@tabler/icons-react";
 
 import { ConsoleShell } from "./components/layout/ConsoleShell";
@@ -14,6 +15,7 @@ import { ExportsPage } from "./components/exports/ExportsPage";
 import { ChangesPage } from "./components/changes/ChangesPage";
 import { AuditPage } from "./components/audit/AuditPage";
 import { DelegationDrawer } from "./components/delegation/DelegationDrawer";
+import { ZoneSettingsPage } from "./components/settings/ZoneSettingsPage";
 import { useDnsStore } from "./state/DnsStore";
 
 export default function App() {
@@ -54,6 +56,9 @@ export default function App() {
           <Tabs.Tab value="audit" leftSection={<IconHistory size={16} />}>
             Audit
           </Tabs.Tab>
+          <Tabs.Tab value="settings" leftSection={<IconSettings size={16} />}>
+            Settings
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="records" pt="md">
@@ -85,6 +90,10 @@ export default function App() {
 
         <Tabs.Panel value="audit" pt="md">
           <AuditPage />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="settings" pt="md">
+          <ZoneSettingsPage />
         </Tabs.Panel>
       </Tabs>
 

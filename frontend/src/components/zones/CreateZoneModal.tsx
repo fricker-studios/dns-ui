@@ -342,9 +342,7 @@ export function CreateZoneModal({
                       <TextInput
                         label={`NS ${index + 1} Hostname`}
                         placeholder={
-                          type === "reverse"
-                            ? "ns1.example.com"
-                            : "ns1"
+                          type === "reverse" ? "ns1.example.com" : "ns1"
                         }
                         value={ns.hostname}
                         onChange={(e) =>

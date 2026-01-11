@@ -1,8 +1,13 @@
+acl dns {
+	192.168.50.3;
+};
+
 options {
 	directory "/var/cache/bind";
-    forwarders { 8.8.8.8; 8.8.4.4; };
-    listen-on { any; };
-    listen-on-v6 { any; };
-    allow-query { any; };
-    recursion yes;
+	allow-query { any; };
+	allow-transfer { dns; };
+	forwarders { 8.8.8.8; 8.8.4.4; };
+	recursion yes;
+	listen-on { any; };
+	listen-on-v6 { any; };
 };

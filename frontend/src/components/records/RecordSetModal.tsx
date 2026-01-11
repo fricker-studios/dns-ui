@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Button,
+  Flex,
   Grid,
   Group,
   Modal,
@@ -142,22 +143,30 @@ export function RecordSetModal({
     >
       <Stack>
         <Grid>
-          <Grid.Col span={{ base: 12, md: 6 }}>
-            <TextInput
-              label="Name (label)"
-              value={label}
-              onChange={(e) => setLabel(e.currentTarget.value)}
-              description={`FQDN: ${fqdn}`}
-              placeholder="@, www, api, _sip._tcp"
-            />
-          </Grid.Col>
-          <Grid.Col span={{ base: 12, md: 6 }}>
-            <Select
-              label="Type"
-              data={recordTypeOptions}
-              value={type}
-              onChange={(v) => setType((v as RecordType) ?? "A")}
-            />
+          <Grid.Col span={{ base: 12 }} m={0} p={0}>
+          <Flex
+            justify="flex-start"
+            align="flex-end"
+            direction="row"
+          >
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <TextInput
+                label="Name (label)"
+                value={label}
+                onChange={(e) => setLabel(e.currentTarget.value)}
+                description={`FQDN: ${fqdn}`}
+                placeholder="@, www, api, _sip._tcp"
+              />
+            </Grid.Col>
+            <Grid.Col span={{ base: 12, md: 6 }}>
+              <Select
+                label="Type"
+                data={recordTypeOptions}
+                value={type}
+                onChange={(v) => setType((v as RecordType) ?? "A")}
+              />
+            </Grid.Col>
+          </Flex>
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
             <NumberInput
@@ -178,7 +187,7 @@ export function RecordSetModal({
 
         <Stack gap="xs">
           {values.map((v, idx) => (
-            <Grid key={v.id} align="end">
+            <Grid key={v.id} align="end" justify="start">
               <Grid.Col
                 span={{
                   base: 12,

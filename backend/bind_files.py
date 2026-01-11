@@ -24,6 +24,8 @@ class ManagedZoneStanza:
     zone: str
     body: str
     file_path: str
+    allow_transfer: list[str]
+    also_notify: list[str]
 
 
 def _atomic_write(path: str, content: str, mode: int = 0o644) -> None:
@@ -69,7 +71,30 @@ def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
         if not fmatch:
             continue
         file_path = fmatch.group("file")
-        zones[zone] = ManagedZoneStanza(zone=zone, body=body, file_path=file_path)
+
+        # Parse allow-transfer and also-notify
+        allow_transfer: list[str] = []
+        also_notify: list[str] = []
+
+        # Match: allow-transfer { ip1; ip2; };
+        allow_match = re.search(r"allow-transfer\s*\{\s*([^}]+)\s*\}", body)
+        if allow_match:
+            entries = allow_match.group(1).strip()
+            allow_transfer = [e.strip() for e in entries.split(";") if e.strip()]
+
+        # Match: also-notify { ip1; ip2; };
+        notify_match = re.search(r"also-notify\s*\{\s*([^}]+)\s*\}", body)
+        if notify_match:
+            entries = notify_match.group(1).strip()
+            also_notify = [e.strip() for e in entries.split(";") if e.strip()]
+
+        zones[zone] = ManagedZoneStanza(
+            zone=zone,
+            body=body,
+            file_path=file_path,
+            allow_transfer=allow_transfer,
+            also_notify=also_notify,
+        )
     return zones
 
 

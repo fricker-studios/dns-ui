@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   AppShell,
   Box,
@@ -39,6 +39,28 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
   const [recordModalOpen, setRecordModalOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // Detect OS for keyboard shortcut display
+  const isMac = useMemo(
+    () =>
+      typeof window !== "undefined" &&
+      /Mac|iPhone|iPod|iPad/.test(navigator.platform),
+    []
+  );
+  const modifierKey = isMac ? "⌘" : "Ctrl";
+
+  // Keyboard shortcut: Cmd+R (Mac) or Ctrl+R (Windows/Linux) to create record
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === "r") {
+        event.preventDefault();
+        setRecordModalOpen(true);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <>
       <AppShell
@@ -59,7 +81,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 <Text size="xs" c="dimmed">
                   BIND-style zones • recordsets • delegation • exports • changes
                   {" · "}
-                  <Kbd>⌘</Kbd>+<Kbd>N</Kbd> create record
+                  <Kbd>{modifierKey}</Kbd>+<Kbd>R</Kbd> create record
                 </Text>
               </Box>
             </Group>
@@ -110,6 +132,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
         opened={settingsOpen}
         onClose={() => setSettingsOpen(false)}
         size="xl"
+        position="right"
         title={
           <Group>
             <IconSettings size={20} />

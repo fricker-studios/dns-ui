@@ -108,13 +108,13 @@ export function ZonesSidebar() {
                   style={{ cursor: "pointer", opacity: selected ? 1 : 0.95 }}
                   onClick={() => setActiveZone(z.id, z.name)}
                 >
-                      <Stack gap="xs">
-                        <Text fw={700}>{humanizeZoneName(z.name)}</Text>
-                        <Badge variant="light" leftSection={icon}>
-                          {z.type}
-                        </Badge>
-                      </Stack>
-                      {/* {z.comment ? (
+                  <Stack gap="xs">
+                    <Text fw={700}>{humanizeZoneName(z.name)}</Text>
+                    <Badge variant="light" leftSection={icon}>
+                      {z.type}
+                    </Badge>
+                  </Stack>
+                  {/* {z.comment ? (
                         <Text size="xs" c="dimmed" mt={6} lineClamp={1}>
                           {z.comment}
                         </Text>

@@ -139,11 +139,13 @@ def write_zone_file(
             admin_domain = ".".join(parts[-2:]) + "."
         else:
             admin_domain = zone_name
-        lines.append(f"@ IN SOA {normalize_fqdn(nameservers[0].hostname)} hostmaster.{admin_domain} (")
+        lines.append(
+            f"@ IN SOA {normalize_fqdn(nameservers[0].hostname)} hostmaster.{admin_domain} ("
+        )
     else:
         # For forward zones, append hostname to zone name
         lines.append(f"@ IN SOA {primary_ns}.{zone_name} hostmaster.{zone_name} (")
-    
+
     lines.append(f"    {serial} ; serial")
     lines.append("    3600 ; refresh")
     lines.append("    600 ; retry")
