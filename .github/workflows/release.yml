@@ -1,0 +1,28 @@
+name: Release to Production
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  IMAGE_TAG: v.${{ github.ref_name }}
+  INTERNAL_REGISTRY_URL: ${{ secrets.INTERNAL_REGISTRY_URL }}
+  IMAGE_NAME: ${{ secrets.INTERNAL_REGISTRY_URL }}/dns-ui
+
+jobs:
+  build-image:
+    runs-on: self-hosted
+    name: Build Image
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and push image
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        run: |
+          docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+          docker push $IMAGE_NAME:$IMAGE_TAG
