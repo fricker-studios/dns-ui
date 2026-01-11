@@ -18,8 +18,8 @@ import {
   useBindConfig,
   useUpdateBindConfig,
   useReloadBindConfig,
-  type BindConfig,
 } from "../../hooks";
+import type { BindConfig } from "../../api/types";
 
 export function SettingsPage() {
   const { config, loading, refetch } = useBindConfig();
@@ -45,6 +45,12 @@ export function SettingsPage() {
   const [allowTransfer, setAllowTransfer] = useState<string[]>([]);
   const [newAllowTransfer, setNewAllowTransfer] = useState("");
 
+  // Secondary server settings
+  const [serverRole, setServerRole] = useState<"primary" | "secondary" | "both">("primary");
+  const [primaryServers, setPrimaryServers] = useState<string[]>([]);
+  const [newPrimaryServer, setNewPrimaryServer] = useState("");
+  const [transferSource, setTransferSource] = useState("");
+
   // Initialize state when config loads
   useEffect(() => {
     if (config) {
@@ -53,6 +59,9 @@ export function SettingsPage() {
       setAcls(config.acls || {});
       setAllowQuery(config.allow_query || []);
       setAllowTransfer(config.allow_transfer || []);
+      setServerRole(config.server_role || "primary");
+      setPrimaryServers(config.primary_servers || []);
+      setTransferSource(config.transfer_source || "");
     }
   }, [config]);
 
@@ -62,6 +71,9 @@ export function SettingsPage() {
     const updated: BindConfig = {
       ...editedConfig,
       forwarders,
+      server_role: serverRole,
+      primary_servers: primaryServers,
+      transfer_source: transferSource || undefined,
       acls,
       allow_query: allowQuery,
       allow_transfer: allowTransfer,
@@ -140,6 +152,18 @@ export function SettingsPage() {
     }
   };
 
+
+  const handleAddPrimaryServer = () => {
+    if (newPrimaryServer && !primaryServers.includes(newPrimaryServer)) {
+      setPrimaryServers([...primaryServers, newPrimaryServer]);
+      setNewPrimaryServer("");
+    }
+  };
+
+  const handleRemovePrimaryServer = (ip: string) => {
+    setPrimaryServers(primaryServers.filter((s) => s !== ip));
+  };
+
   const handleRemoveAllowTransfer = (entry: string) => {
     setAllowTransfer(allowTransfer.filter((e) => e !== entry));
   };
@@ -194,6 +218,25 @@ export function SettingsPage() {
 
       <Card shadow="sm" padding="lg" withBorder>
         <Stack gap="md">
+          <Title order={4}>Server Role</Title>
+          <Text size="sm" c="dimmed">
+            Configure this DNS server as primary, secondary, or both
+          </Text>
+          <Select
+            label="Role"
+            data={[
+              { value: "primary", label: "Primary" },
+              { value: "secondary", label: "Secondary" },
+              { value: "both", label: "Both (Primary + Secondary)" },
+            ]}
+            value={serverRole}
+            onChange={(value) => setServerRole(value as any || "primary")}
+          />
+        </Stack>
+      </Card>
+
+      <Card shadow="sm" padding="lg" withBorder>
+        <Stack gap="md">
           <Title order={4}>General Settings</Title>
 
           <TextInput
@@ -230,12 +273,75 @@ export function SettingsPage() {
         </Stack>
       </Card>
 
-      <Card shadow="sm" padding="lg" withBorder>
-        <Stack gap="md">
-          <Title order={4}>Forwarders</Title>
-          <Text size="sm" c="dimmed">
-            DNS servers to forward queries to
-          </Text>
+      {(serverRole === "secondary" || serverRole === "both") && (
+        <Card shadow="sm" padding="lg" withBorder>
+          <Stack gap="md">
+            <Title order={4}>Secondary Server Configuration</Title>
+            <Text size="sm" c="dimmed">
+              Configure primary servers to replicate zones from
+            </Text>
+
+            <Group>
+              <TextInput
+                placeholder="192.168.1.10"
+                value={newPrimaryServer}
+                onChange={(e) => setNewPrimaryServer(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddPrimaryServer();
+                  }
+                }}
+                style={{ flex: 1 }}
+              />
+              <Button
+                leftSection={<IconPlus size={16} />}
+                onClick={handleAddPrimaryServer}
+                disabled={!newPrimaryServer}
+              >
+                Add Primary Server
+              </Button>
+            </Group>
+
+            <Stack gap="xs">
+              {primaryServers.map((ip) => (
+                <Group key={ip} justify="space-between">
+                  <Badge size="lg" variant="light">
+                    {ip}
+                  </Badge>
+                  <ActionIcon
+                    color="red"
+                    variant="subtle"
+                    onClick={() => handleRemovePrimaryServer(ip)}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+              ))}
+              {primaryServers.length === 0 && (
+                <Text size="sm" c="dimmed">
+                  No primary servers configured
+                </Text>
+              )}
+            </Stack>
+
+            <TextInput
+              label="Transfer Source"
+              description="Source IP address for zone transfers (optional)"
+              placeholder="192.168.1.2"
+              value={transferSource}
+              onChange={(e) => setTransferSource(e.currentTarget.value)}
+            />
+          </Stack>
+        </Card>
+      )}
+
+      {(serverRole === "primary" || serverRole === "both") && (
+        <Card shadow="sm" padding="lg" withBorder>
+          <Stack gap="md">
+            <Title order={4}>Forwarders</Title>
+            <Text size="sm" c="dimmed">
+              DNS servers to forward queries to
+            </Text>
 
           <Group>
             <TextInput
@@ -280,7 +386,8 @@ export function SettingsPage() {
             )}
           </Stack>
         </Stack>
-      </Card>
+        </Card>
+      )}
 
       <Card shadow="sm" padding="lg" withBorder>
         <Stack gap="md">
@@ -443,14 +550,15 @@ export function SettingsPage() {
             </Stack>
           </Stack>
 
-          <Stack gap="xs">
-            <Text size="sm" fw={500}>
-              Allow Transfer
-            </Text>
-            <Text size="xs" c="dimmed">
-              Who can perform zone transfers (e.g., 'none', 'localhost', ACL
-              names, IP addresses)
-            </Text>
+          {(serverRole === "primary" || serverRole === "both") && (
+            <Stack gap="xs">
+              <Text size="sm" fw={500}>
+                Allow Transfer
+              </Text>
+              <Text size="xs" c="dimmed">
+                Who can perform zone transfers (e.g., 'none', 'localhost', ACL
+                names, IP addresses)
+              </Text>
             <Group>
               <TextInput
                 placeholder="localhost or none"
@@ -493,6 +601,7 @@ export function SettingsPage() {
               )}
             </Stack>
           </Stack>
+          )}
 
           <TextInput
             label="Listen On"

@@ -50,3 +50,18 @@ export interface ApiRecordSetsExport {
   zone: string;
   recordsets: ApiRecordSet[];
 }
+
+export interface BindConfig {
+  directory?: string;
+  forwarders?: string[];
+  recursion?: boolean;
+  dnssec_validation?: string;
+  listen_on?: string;
+  listen_on_v6?: string;
+  acls?: Record<string, string[]>;
+  allow_query?: string[];
+  allow_transfer?: string[];
+  server_role?: "primary" | "secondary" | "both";
+  primary_servers?: string[];
+  transfer_source?: string;
+}

@@ -4,18 +4,8 @@
 
 import { useState, useEffect } from "react";
 import { api, ApiError } from "../api/client";
+import type { BindConfig } from "../api/types";
 
-export interface BindConfig {
-  directory?: string;
-  forwarders: string[];
-  listen_on?: string;
-  listen_on_v6?: string;
-  allow_query: string[];
-  recursion: boolean;
-  dnssec_validation?: string;
-  allow_transfer: string[];
-  acls: Record<string, string[]>;
-}
 
 export function useBindConfig() {
   const [config, setConfig] = useState<BindConfig | null>(null);

@@ -117,6 +117,29 @@ def parse_named_options(content: str) -> dict[str, Any]:
     # Parse allow-transfer (now a list)
     config["allow_transfer"] = parse_list_field(options_content, "allow-transfer")
 
+    # Parse server role (custom directive, not standard BIND)
+    server_role_match = re.search(r"//\s*SERVER_ROLE:\s*(primary|secondary|both)", content)
+    if server_role_match:
+        config["server_role"] = server_role_match.group(1)
+    else:
+        config["server_role"] = "primary"  # Default to primary
+
+    # Parse primary servers (masters block outside options - for secondary mode)
+    # Look for "masters primary-servers { ... };"
+    masters_match = re.search(r"masters\s+primary-servers\s*\{([^}]+)\}", content)
+    if masters_match:
+        masters_content = masters_match.group(1)
+        # Parse the list of servers
+        servers = [s.strip().rstrip(";") for s in masters_content.split(";") if s.strip()]
+        config["primary_servers"] = servers
+    else:
+        config["primary_servers"] = []
+
+    # Parse transfer-source
+    transfer_source_match = re.search(r"transfer-source\s+([^;]+);", options_content)
+    if transfer_source_match:
+        config["transfer_source"] = transfer_source_match.group(1).strip()
+
     return config
 
 
@@ -126,6 +149,11 @@ def build_named_options(config: dict[str, Any]) -> str:
     """
     lines = []
 
+    # Add server role comment (custom directive for UI)
+    server_role = config.get("server_role", "primary")
+    lines.append(f"// SERVER_ROLE: {server_role}")
+    lines.append("")
+
     # Build ACLs first
     if "acls" in config and config["acls"]:
         for acl_name, entries in config["acls"].items():
@@ -134,6 +162,14 @@ def build_named_options(config: dict[str, Any]) -> str:
                 lines.append(f"\t{entry};")
             lines.append("};")
             lines.append("")  # Empty line after each ACL
+
+    # Build masters list (for secondary server configuration)
+    if "primary_servers" in config and config["primary_servers"]:
+        lines.append("masters primary-servers {")
+        for server in config["primary_servers"]:
+            lines.append(f"\t{server};")
+        lines.append("};")
+        lines.append("")
 
     lines.append("options {")
 
@@ -172,6 +208,10 @@ def build_named_options(config: dict[str, Any]) -> str:
     # Listen-on-v6
     if "listen_on_v6" in config:
         lines.append(f'\tlisten-on-v6 {{ {config["listen_on_v6"]}; }};')
+
+    # Transfer source
+    if "transfer_source" in config:
+        lines.append(f'\ttransfer-source {config["transfer_source"]};')
 
     lines.append("};")
     return "\n".join(lines) + "\n"
