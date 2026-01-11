@@ -1,11 +1,28 @@
 import { useMemo, useState } from "react";
-import { Button, Drawer, Grid, Group, Paper, Select, Stack, Switch, Text, TextInput } from "@mantine/core";
+import {
+  Button,
+  Drawer,
+  Grid,
+  Group,
+  Paper,
+  Select,
+  Stack,
+  Switch,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import type { Zone, ZoneType } from "../../types/dns";
 import { fqdnJoin, normalizeFqdn, nowIso, uid } from "../../lib/bind";
 import { useDnsStore } from "../../state/DnsStore";
 
-export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose: () => void }) {
+export function DelegationDrawer({
+  opened,
+  onClose,
+}: {
+  opened: boolean;
+  onClose: () => void;
+}) {
   const { activeZone, upsertRecordSet, createZone } = useDnsStore();
 
   const [label, setLabel] = useState("dev");
@@ -14,13 +31,26 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
   const [createChild, setCreateChild] = useState(true);
   const [childType, setChildType] = useState<ZoneType>("public");
 
-  const childFqdn = useMemo(() => activeZone ? fqdnJoin(label || "dev", activeZone.name) : "", [label, activeZone]);
+  const childFqdn = useMemo(
+    () => (activeZone ? fqdnJoin(label || "dev", activeZone.name) : ""),
+    [label, activeZone],
+  );
 
   const submit = () => {
     if (!activeZone) return;
     const targets = [normalizeFqdn(ns1), normalizeFqdn(ns2)].filter(Boolean);
-    if (!label.trim()) return notifications.show({ color: "red", title: "Missing subdomain", message: "Enter a label (dev)" });
-    if (targets.some((t) => !t.endsWith("."))) return notifications.show({ color: "red", title: "NS must be FQDN", message: "End NS with a dot." });
+    if (!label.trim())
+      return notifications.show({
+        color: "red",
+        title: "Missing subdomain",
+        message: "Enter a label (dev)",
+      });
+    if (targets.some((t) => !t.endsWith(".")))
+      return notifications.show({
+        color: "red",
+        title: "NS must be FQDN",
+        message: "End NS with a dot.",
+      });
 
     upsertRecordSet(
       {
@@ -36,7 +66,7 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
         updatedAt: nowIso(),
       },
       `Delegate ${childFqdn}`,
-      [`NS delegation created`, ...targets.map((t) => `+ NS ${t}`)]
+      [`NS delegation created`, ...targets.map((t) => `+ NS ${t}`)],
     );
 
     if (createChild) {
@@ -64,24 +94,40 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
       createZone(z);
     }
 
-    notifications.show({ color: "green", title: "Delegation created", message: `NS for ${childFqdn}` });
+    notifications.show({
+      color: "green",
+      title: "Delegation created",
+      message: `NS for ${childFqdn}`,
+    });
     onClose();
   };
 
   return (
-    <Drawer opened={opened} onClose={onClose} position="right" size="lg" title="Delegate subdomain">
+    <Drawer
+      opened={opened}
+      onClose={onClose}
+      position="right"
+      size="lg"
+      title="Delegate subdomain"
+    >
       {!activeZone ? (
         <Text c="dimmed">No zone selected</Text>
       ) : (
         <Stack>
           <Paper withBorder p="md" radius="md">
             <Text fw={700}>Parent zone</Text>
-            <Text size="sm" c="dimmed">{activeZone.name}</Text>
+            <Text size="sm" c="dimmed">
+              {activeZone.name}
+            </Text>
           </Paper>
 
           <Grid>
             <Grid.Col span={{ base: 12, md: 6 }}>
-              <TextInput label="Subdomain label" value={label} onChange={(e) => setLabel(e.currentTarget.value)} />
+              <TextInput
+                label="Subdomain label"
+                value={label}
+                onChange={(e) => setLabel(e.currentTarget.value)}
+              />
             </Grid.Col>
             <Grid.Col span={{ base: 12, md: 6 }}>
               <Select
@@ -97,12 +143,25 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
             </Grid.Col>
           </Grid>
 
-          <Text size="sm" c="dimmed">Child FQDN: {childFqdn}</Text>
+          <Text size="sm" c="dimmed">
+            Child FQDN: {childFqdn}
+          </Text>
 
           <Paper withBorder p="md" radius="md">
-            <Text fw={700} mb="sm">Authoritative NS targets</Text>
-            <TextInput label="NS #1" value={ns1} onChange={(e) => setNs1(e.currentTarget.value)} />
-            <TextInput mt="sm" label="NS #2" value={ns2} onChange={(e) => setNs2(e.currentTarget.value)} />
+            <Text fw={700} mb="sm">
+              Authoritative NS targets
+            </Text>
+            <TextInput
+              label="NS #1"
+              value={ns1}
+              onChange={(e) => setNs1(e.currentTarget.value)}
+            />
+            <TextInput
+              mt="sm"
+              label="NS #2"
+              value={ns2}
+              onChange={(e) => setNs2(e.currentTarget.value)}
+            />
           </Paper>
 
           <Switch
@@ -113,7 +172,9 @@ export function DelegationDrawer({ opened, onClose }: { opened: boolean; onClose
           />
 
           <Group justify="flex-end">
-            <Button variant="default" onClick={onClose}>Cancel</Button>
+            <Button variant="default" onClick={onClose}>
+              Cancel
+            </Button>
             <Button onClick={submit}>Create delegation</Button>
           </Group>
         </Stack>

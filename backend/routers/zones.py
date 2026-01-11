@@ -25,7 +25,15 @@ def list_zones():
     zones = parse_managed_zones(text)
     out: list[Zone] = []
     for zname, stanza in zones.items():
-        out.append(Zone(name=zname, type="public", file_path=stanza.file_path, options={}))
+        # Determine zone type based on name
+        zone_type = (
+            "reverse"
+            if (".in-addr.arpa" in zname or ".ip6.arpa" in zname)
+            else "public"
+        )
+        out.append(
+            Zone(name=zname, type=zone_type, file_path=stanza.file_path, options={})
+        )
     return sorted(out, key=lambda z: z.name)
 
 

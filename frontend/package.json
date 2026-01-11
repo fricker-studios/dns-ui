@@ -7,13 +7,16 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prettier:write": "prettier --write \"src/**/*.{ts,tsx,js,jsx,json,css,md}\"",
+    "prettier:check": "prettier --check \"src/**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "dependencies": {
     "@mantine/core": "^8.3.10",
     "@mantine/hooks": "^8.3.10",
     "@mantine/notifications": "^8.3.10",
     "@tabler/icons-react": "^3.36.1",
+    "prettier": "^3.7.4",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },

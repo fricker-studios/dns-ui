@@ -29,7 +29,7 @@ def read_zone_file(zone_name: str, zone_file: str) -> list[RecordSet]:
     z = dns.zone.from_file(zone_file, origin=origin, relativize=False)
 
     recordsets: list[RecordSet] = []
-    for (name, node) in z.nodes.items():
+    for name, node in z.nodes.items():
         fqdn = name.to_text()
         for rdataset in node.rdatasets:
             rtype = dns.rdatatype.to_text(rdataset.rdtype)
@@ -45,7 +45,11 @@ def read_zone_file(zone_name: str, zone_file: str) -> list[RecordSet]:
                     # "10 mail.example.com."
                     parts = txt.split()
                     if len(parts) >= 2:
-                        values.append(RecordValue(value=normalize_fqdn(parts[1]), priority=int(parts[0])))
+                        values.append(
+                            RecordValue(
+                                value=normalize_fqdn(parts[1]), priority=int(parts[0])
+                            )
+                        )
                     else:
                         values.append(RecordValue(value=txt))
                 elif rtype == "SRV":
@@ -105,14 +109,14 @@ def _bump_soa_serial(zone_text: str) -> str:
 
 
 def write_zone_file(
-        zone_name: str,
-        zone_file: str,
-        recordsets: list[RecordSet],
-        default_ttl: int,
-        primary_ns: str,
-        nameservers: list[NameServer],
-        serial: int | None = None,
-    ) -> None:
+    zone_name: str,
+    zone_file: str,
+    recordsets: list[RecordSet],
+    default_ttl: int,
+    primary_ns: str,
+    nameservers: list[NameServer],
+    serial: int | None = None,
+) -> None:
     """
     Rewrite entire zone file (UI-managed style).
     Keeps a minimal SOA + NS. (You can expand later.)
@@ -142,7 +146,11 @@ def write_zone_file(
 
     # Records
     for rs in sorted(recordsets, key=lambda r: (r.name, r.type)):
-        owner = "@" if normalize_fqdn(rs.name) == normalize_fqdn(zone_name) else rs.name.replace(zone_name, "").rstrip(".")
+        owner = (
+            "@"
+            if normalize_fqdn(rs.name) == normalize_fqdn(zone_name)
+            else rs.name.replace(zone_name, "").rstrip(".")
+        )
         ttl = rs.ttl or default_ttl
 
         for v in rs.values:
@@ -150,16 +158,20 @@ def write_zone_file(
                 # Quote TXT if not already
                 val = v.value
                 if not (val.startswith('"') and val.endswith('"')):
-                    val = f"\"{val}\""
+                    val = f'"{val}"'
                 lines.append(f"{owner}\t{ttl}\tIN\tTXT\t{val}")
             elif rs.type == "MX":
                 pref = v.priority if v.priority is not None else 10
-                lines.append(f"{owner}\t{ttl}\tIN\tMX\t{pref}\t{normalize_fqdn(v.value)}")
+                lines.append(
+                    f"{owner}\t{ttl}\tIN\tMX\t{pref}\t{normalize_fqdn(v.value)}"
+                )
             elif rs.type == "SRV":
                 pr = v.priority if v.priority is not None else 10
                 w = v.weight if v.weight is not None else 5
                 p = v.port if v.port is not None else 443
-                lines.append(f"{owner}\t{ttl}\tIN\tSRV\t{pr}\t{w}\t{p}\t{normalize_fqdn(v.value)}")
+                lines.append(
+                    f"{owner}\t{ttl}\tIN\tSRV\t{pr}\t{w}\t{p}\t{normalize_fqdn(v.value)}"
+                )
             else:
                 # CNAME/NS/PTR should usually be FQDN in zone text; enforce dot for those
                 val = v.value
@@ -189,66 +201,75 @@ def write_zone_file(
 
 
 def write_zone_recordsets(
-        zone_name: str,
-        zone_file: str,
-        recordsets: list[RecordSet],
-    ) -> None:
+    zone_name: str,
+    zone_file: str,
+    recordsets: list[RecordSet],
+) -> None:
     """
     Update only the records in a zone file, leaving SOA and header intact.
     Reads the existing zone, preserves $TTL, SOA, and NS records, then replaces all other records.
     """
     # Read the existing zone file
-    with open(zone_file, 'r') as f:
+    with open(zone_file, "r") as f:
         original_lines = f.readlines()
-    
+
     # Extract header section (everything up to and including SOA)
     header_lines: list[str] = []
     soa_found = False
     in_soa = False
     default_ttl = 3600
-    
+
     for line in original_lines:
         stripped = line.strip()
-        
+
         # Capture $TTL
-        if stripped.startswith('$TTL'):
+        if stripped.startswith("$TTL"):
             try:
                 default_ttl = int(stripped.split()[1])
             except (IndexError, ValueError):
                 pass
             header_lines.append(line)
             continue
-        
+
         # Detect SOA start
-        if 'SOA' in line and not soa_found:
+        if "SOA" in line and not soa_found:
             in_soa = True
             header_lines.append(line)
             continue
-        
+
         # If we're in SOA, keep appending until we find the closing paren
         if in_soa:
             header_lines.append(line)
-            if ')' in line:
+            if ")" in line:
                 in_soa = False
                 soa_found = True
             continue
-        
+
         # After SOA, keep NS records
-        if soa_found and stripped and not stripped.startswith(';'):
-            if '\tNS\t' in line or '\tIN\tNS\t' in line or ' NS ' in line or ' IN NS ' in line:
+        if soa_found and stripped and not stripped.startswith(";"):
+            if (
+                "\tNS\t" in line
+                or "\tIN\tNS\t" in line
+                or " NS " in line
+                or " IN NS " in line
+            ):
                 header_lines.append(line)
             else:
                 # Stop at first non-NS record after SOA
                 break
-    
+
     # Build new record lines
     record_lines: list[str] = []
     for rs in sorted(recordsets, key=lambda r: (r.name, r.type)):
         # Skip NS records since they're already preserved in the header
         if rs.type == "NS":
             continue
-            
-        owner = "@" if normalize_fqdn(rs.name) == normalize_fqdn(zone_name) else rs.name.replace(zone_name, "").rstrip(".")
+
+        owner = (
+            "@"
+            if normalize_fqdn(rs.name) == normalize_fqdn(zone_name)
+            else rs.name.replace(zone_name, "").rstrip(".")
+        )
         ttl = rs.ttl or default_ttl
 
         for v in rs.values:
@@ -259,30 +280,34 @@ def write_zone_recordsets(
                 record_lines.append(f"{owner}\t{ttl}\tIN\tTXT\t{val}\n")
             elif rs.type == "MX":
                 pref = v.priority if v.priority is not None else 10
-                record_lines.append(f"{owner}\t{ttl}\tIN\tMX\t{pref}\t{normalize_fqdn(v.value)}\n")
+                record_lines.append(
+                    f"{owner}\t{ttl}\tIN\tMX\t{pref}\t{normalize_fqdn(v.value)}\n"
+                )
             elif rs.type == "SRV":
                 pr = v.priority if v.priority is not None else 10
                 w = v.weight if v.weight is not None else 5
                 p = v.port if v.port is not None else 443
-                record_lines.append(f"{owner}\t{ttl}\tIN\tSRV\t{pr}\t{w}\t{p}\t{normalize_fqdn(v.value)}\n")
+                record_lines.append(
+                    f"{owner}\t{ttl}\tIN\tSRV\t{pr}\t{w}\t{p}\t{normalize_fqdn(v.value)}\n"
+                )
             else:
                 val = v.value
                 if rs.type in ("CNAME", "NS", "PTR"):
                     val = normalize_fqdn(val)
                 record_lines.append(f"{owner}\t{ttl}\tIN\t{rs.type}\t{val}\n")
-    
+
     # Combine header + records
     text = "".join(header_lines)
-    if not text.endswith('\n\n'):
-        text += '\n'
+    if not text.endswith("\n\n"):
+        text += "\n"
     text += "".join(record_lines)
-    
+
     # Bump serial if configured
     if settings.auto_bump_serial:
         text = _bump_soa_serial(text)
-    
+
     os.makedirs(os.path.dirname(zone_file), exist_ok=True)
-    
+
     # lock + atomic replace
     lock_fd = _lock_path(zone_file)
     try:

@@ -5,11 +5,7 @@
 const API_BASE = "/api";
 
 export class ApiError extends Error {
-  constructor(
-    status: number,
-    statusText: string,
-    body: any
-  ) {
+  constructor(status: number, statusText: string, body: any) {
     super(`API Error [${status}] (${statusText}): ${body}`);
     this.name = "ApiError";
   }
@@ -18,10 +14,10 @@ export class ApiError extends Error {
 async function request<T>(
   method: string,
   path: string,
-  body?: any
-): Promise<T|null> {
+  body?: any,
+): Promise<T | null> {
   const url = `${API_BASE}${path}`;
-  
+
   const options: RequestInit = {
     method,
     headers: {

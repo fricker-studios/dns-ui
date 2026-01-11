@@ -35,14 +35,17 @@ export function useCreateZone() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const createZone = async (payload: ApiZoneCreate): Promise<ApiZone | null> => {
+  const createZone = async (
+    payload: ApiZoneCreate,
+  ): Promise<ApiZone | null> => {
     try {
       setLoading(true);
       setError(null);
       const zone = await zonesApi.create(payload);
       return zone;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : "Failed to create zone";
+      const message =
+        err instanceof ApiError ? err.message : "Failed to create zone";
       setError(message);
       console.error("Error creating zone:", err);
       return null;
@@ -65,7 +68,8 @@ export function useDeleteZone() {
       await zonesApi.delete(zoneName);
       return true;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : "Failed to delete zone";
+      const message =
+        err instanceof ApiError ? err.message : "Failed to delete zone";
       setError(message);
       console.error("Error deleting zone:", err);
       return false;

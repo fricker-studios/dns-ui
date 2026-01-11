@@ -1,6 +1,7 @@
 import type { RecordSet, RecordType, Zone } from "../types/dns";
 
-export const uid = () => Math.random().toString(16).slice(2) + Date.now().toString(16);
+export const uid = () =>
+  Math.random().toString(16).slice(2) + Date.now().toString(16);
 export const nowIso = () => new Date().toISOString();
 
 export function normalizeFqdn(s: string) {
@@ -21,7 +22,11 @@ export function fqdnJoin(label: string, zoneName: string) {
   return normalizeFqdn(`${l}.${z}`);
 }
 
-export function validateRecordInput(args: { type: RecordType; name: string; values: any[] }) {
+export function validateRecordInput(args: {
+  type: RecordType;
+  name: string;
+  values: any[];
+}) {
   const errors: string[] = [];
   if (!args.name.trim()) errors.push("Name is required.");
   if (!args.values.length) errors.push("At least one value is required.");
@@ -30,15 +35,23 @@ export function validateRecordInput(args: { type: RecordType; name: string; valu
     const raw = String(v.value ?? "").trim();
     if (!raw) errors.push("Record value cannot be empty.");
 
-    if (args.type === "A" && !/^\d{1,3}(\.\d{1,3}){3}$/.test(raw)) errors.push(`A expects IPv4: "${raw}"`);
-    if (args.type === "AAAA" && !raw.includes(":")) errors.push(`AAAA expects IPv6: "${raw}"`);
+    if (args.type === "A" && !/^\d{1,3}(\.\d{1,3}){3}$/.test(raw))
+      errors.push(`A expects IPv4: "${raw}"`);
+    if (args.type === "AAAA" && !raw.includes(":"))
+      errors.push(`AAAA expects IPv6: "${raw}"`);
 
     const needsFqdn = ["CNAME", "NS", "PTR", "MX", "SRV"].includes(args.type);
-    if (needsFqdn && !raw.endsWith(".")) errors.push(`${args.type} targets should end in "." (FQDN).`);
+    if (needsFqdn && !raw.endsWith("."))
+      errors.push(`${args.type} targets should end in "." (FQDN).`);
 
-    if (args.type === "MX" && (v.priority === undefined || v.priority === null)) errors.push("MX requires priority.");
+    if (args.type === "MX" && (v.priority === undefined || v.priority === null))
+      errors.push("MX requires priority.");
     if (args.type === "SRV") {
-      if (v.priority === undefined || v.weight === undefined || v.port === undefined) {
+      if (
+        v.priority === undefined ||
+        v.weight === undefined ||
+        v.port === undefined
+      ) {
         errors.push("SRV requires priority, weight, and port.");
       }
     }
@@ -59,27 +72,35 @@ export function computeZoneFile(zone: Zone, recordsets: RecordSet[]) {
     `    ${zone.soa.retry} ; retry`,
     `    ${zone.soa.expire} ; expire`,
     `    ${zone.soa.minimum} ; minimum`,
-    `)`
+    `)`,
   );
 
   for (const ns of zone.nameServers) lines.push(`@ IN NS ${ns}`);
   lines.push("");
 
-  const sorted = [...recordsets].sort((a, b) => (a.name + a.type).localeCompare(b.name + b.type));
+  const sorted = [...recordsets].sort((a, b) =>
+    (a.name + a.type).localeCompare(b.name + b.type),
+  );
 
   for (const rs of sorted) {
     const owner =
-      rs.name === zone.name ? "@" : rs.name.replace(zone.name, "").replace(/\.$/, "");
+      rs.name === zone.name
+        ? "@"
+        : rs.name.replace(zone.name, "").replace(/\.$/, "");
     const ttl = rs.ttl ?? zone.defaultTtl;
 
     for (const v of rs.values) {
-      if (rs.type === "MX") lines.push(`${owner}\t${ttl}\tIN\tMX\t${v.priority ?? 10}\t${v.value}`);
+      if (rs.type === "MX")
+        lines.push(`${owner}\t${ttl}\tIN\tMX\t${v.priority ?? 10}\t${v.value}`);
       else if (rs.type === "SRV")
-        lines.push(`${owner}\t${ttl}\tIN\tSRV\t${v.priority ?? 10}\t${v.weight ?? 5}\t${v.port ?? 443}\t${v.value}`);
+        lines.push(
+          `${owner}\t${ttl}\tIN\tSRV\t${v.priority ?? 10}\t${v.weight ?? 5}\t${v.port ?? 443}\t${v.value}`,
+        );
       else if (rs.type === "TXT") {
         const txt = String(v.value).startsWith('"') ? v.value : `"${v.value}"`;
         lines.push(`${owner}\t${ttl}\tIN\tTXT\t${txt}`);
-      } else if (rs.type === "CAA") lines.push(`${owner}\t${ttl}\tIN\tCAA\t${v.value}`);
+      } else if (rs.type === "CAA")
+        lines.push(`${owner}\t${ttl}\tIN\tCAA\t${v.value}`);
       else lines.push(`${owner}\t${ttl}\tIN\t${rs.type}\t${v.value}`);
     }
   }
@@ -90,9 +111,15 @@ export function computeZoneFile(zone: Zone, recordsets: RecordSet[]) {
 export function computeNamedConfSnippet(zone: Zone) {
   const zName = humanizeZoneName(zone.name);
   const file = `/etc/bind/zones/db.${zName}`;
-  const allow = zone.allowTransferTo.length ? `allow-transfer { ${zone.allowTransferTo.join("; ")}; };` : "";
-  const notify = zone.notifyTargets.length ? `also-notify { ${zone.notifyTargets.join("; ")}; };` : "";
-  const dnssec = zone.dnssecEnabled ? `dnssec-policy default;` : `dnssec-validation no;`;
+  const allow = zone.allowTransferTo.length
+    ? `allow-transfer { ${zone.allowTransferTo.join("; ")}; };`
+    : "";
+  const notify = zone.notifyTargets.length
+    ? `also-notify { ${zone.notifyTargets.join("; ")}; };`
+    : "";
+  const dnssec = zone.dnssecEnabled
+    ? `dnssec-policy default;`
+    : `dnssec-validation no;`;
 
   return `// named.conf.local snippet
 zone "${zName}" {

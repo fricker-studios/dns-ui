@@ -8,11 +8,12 @@ services:
     # network_mode: host
     ports:
       - "8080:8080"
-      - "53:53"
+      - "5353:53"
     stdin_open: true
     tty: true
     environment:
       - DNS_NAMED_CONF=/etc/bind/named.conf
+      - DNS_NAMED_CONF_OPTIONS=/etc/bind/named.conf.options
       - DNS_MANAGED_INCLUDE=/etc/bind/managed-zones.conf
       - DNS_MANAGED_ZONE_DIR=/etc/bind/managed-zones
       - DNS_RNDC=/usr/sbin/rndc

@@ -4,7 +4,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, field_validator
 
 
-ZoneType = Literal["public", "private"]
+ZoneType = Literal["public", "private", "reverse"]
 RecordType = Literal["A", "AAAA", "CNAME", "MX", "TXT", "SRV", "NS", "PTR", "CAA"]
 
 
@@ -50,6 +50,7 @@ class RecordSet(BaseModel):
 class NameServer(BaseModel):
     hostname: str
     ipv4: str
+
 
 class ZoneCreate(BaseModel):
     name: str

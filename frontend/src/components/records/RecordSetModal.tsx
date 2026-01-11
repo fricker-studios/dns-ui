@@ -1,8 +1,24 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Grid, Group, Modal, NumberInput, Select, Stack, TextInput, Textarea } from "@mantine/core";
+import {
+  Button,
+  Grid,
+  Group,
+  Modal,
+  NumberInput,
+  Select,
+  Stack,
+  TextInput,
+  Textarea,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import type { RecordSet, RecordType, RecordValue } from "../../types/dns";
-import { fqdnJoin, normalizeFqdn, nowIso, uid, validateRecordInput } from "../../lib/bind";
+import {
+  fqdnJoin,
+  normalizeFqdn,
+  nowIso,
+  uid,
+  validateRecordInput,
+} from "../../lib/bind";
 import { useDnsStore } from "../../state/DnsStore";
 
 const recordTypeOptions: { value: RecordType; label: string }[] = [
@@ -34,37 +50,56 @@ export function RecordSetModal({
   const [label, setLabel] = useState("@");
   const [ttl, setTtl] = useState<number | "">("");
   const [comment, setComment] = useState("");
-  const [values, setValues] = useState<RecordValue[]>([{ id: uid(), value: "" }]);
+  const [values, setValues] = useState<RecordValue[]>([
+    { id: uid(), value: "" },
+  ]);
 
   useEffect(() => {
     if (!opened || !activeZone) return;
     if (!editRecordSet) {
-      setType("A"); setLabel("@"); setTtl(""); setComment(""); setValues([{ id: uid(), value: "" }]);
+      setType("A");
+      setLabel("@");
+      setTtl("");
+      setComment("");
+      setValues([{ id: uid(), value: "" }]);
       return;
     }
     setType(editRecordSet.type);
-    const rel = editRecordSet.name === activeZone.name
-      ? "@"
-      : editRecordSet.name.replace(activeZone.name, "").replace(/\.$/, "");
+    const rel =
+      editRecordSet.name === activeZone.name
+        ? "@"
+        : editRecordSet.name.replace(activeZone.name, "").replace(/\.$/, "");
     setLabel(rel || "@");
     setTtl(editRecordSet.ttl ?? "");
     setComment(editRecordSet.comment ?? "");
     setValues(editRecordSet.values.map((v) => ({ ...v })));
   }, [opened, editRecordSet, activeZone]);
 
-  const fqdn = useMemo(() => activeZone ? fqdnJoin(label || "@", activeZone.name) : "", [label, activeZone]);
+  const fqdn = useMemo(
+    () => (activeZone ? fqdnJoin(label || "@", activeZone.name) : ""),
+    [label, activeZone],
+  );
 
   const save = () => {
     if (!activeZone) return;
     const normalizedValues = values.map((v) => {
       let val = String(v.value ?? "").trim();
-      if (["CNAME","NS","PTR","MX","SRV"].includes(type)) val = normalizeFqdn(val);
+      if (["CNAME", "NS", "PTR", "MX", "SRV"].includes(type))
+        val = normalizeFqdn(val);
       return { ...v, value: val };
     });
 
-    const errors = validateRecordInput({ type, name: fqdn, values: normalizedValues });
+    const errors = validateRecordInput({
+      type,
+      name: fqdn,
+      values: normalizedValues,
+    });
     if (errors.length) {
-      notifications.show({ color: "red", title: "Validation", message: errors[0] });
+      notifications.show({
+        color: "red",
+        title: "Validation",
+        message: errors[0],
+      });
       return;
     }
 
@@ -84,15 +119,27 @@ export function RecordSetModal({
     upsertRecordSet(
       rs,
       `${mode === "create" ? "Create" : "Update"} ${rs.type} ${rs.name}`,
-      [mode === "create" ? "Added recordset" : "Updated recordset", ...rs.values.map((v) => `• ${v.value}`)]
+      [
+        mode === "create" ? "Added recordset" : "Updated recordset",
+        ...rs.values.map((v) => `• ${v.value}`),
+      ],
     );
 
-    notifications.show({ color: "green", title: "Saved", message: `${rs.type} ${rs.name}` });
+    notifications.show({
+      color: "green",
+      title: "Saved",
+      message: `${rs.type} ${rs.name}`,
+    });
     onClose();
   };
 
   return (
-    <Modal opened={opened} onClose={onClose} title={mode === "create" ? "Create record" : "Edit record"} size="lg">
+    <Modal
+      opened={opened}
+      onClose={onClose}
+      title={mode === "create" ? "Create record" : "Edit record"}
+      size="lg"
+    >
       <Stack>
         <Grid>
           <Grid.Col span={{ base: 12, md: 6 }}>
@@ -105,32 +152,61 @@ export function RecordSetModal({
             />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 6 }}>
-            <Select label="Type" data={recordTypeOptions} value={type} onChange={(v) => setType((v as RecordType) ?? "A")} />
+            <Select
+              label="Type"
+              data={recordTypeOptions}
+              value={type}
+              onChange={(v) => setType((v as RecordType) ?? "A")}
+            />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
-            <NumberInput label="TTL (seconds)" value={ttl} onChange={setTtl as any} placeholder={`${activeZone?.defaultTtl ?? 300}`} />
+            <NumberInput
+              label="TTL (seconds)"
+              value={ttl}
+              onChange={setTtl as any}
+              placeholder={`${activeZone?.defaultTtl ?? 300}`}
+            />
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 8 }}>
-            <Textarea label="Comment" value={comment} onChange={(e) => setComment(e.currentTarget.value)} />
+            <Textarea
+              label="Comment"
+              value={comment}
+              onChange={(e) => setComment(e.currentTarget.value)}
+            />
           </Grid.Col>
         </Grid>
 
         <Stack gap="xs">
           {values.map((v, idx) => (
             <Grid key={v.id} align="end">
-              <Grid.Col span={{ base: 12, md: type === "MX" || type === "SRV" ? 6 : 10 }}>
+              <Grid.Col
+                span={{
+                  base: 12,
+                  md: type === "MX" || type === "SRV" ? 6 : 10,
+                }}
+              >
                 <TextInput
                   label={`Value #${idx + 1}`}
                   value={v.value}
                   onChange={(e) =>
-                    setValues((prev) => prev.map((x) => (x.id === v.id ? { ...x, value: e.currentTarget.value } : x)))
+                    setValues((prev) =>
+                      prev.map((x) =>
+                        x.id === v.id
+                          ? { ...x, value: e.currentTarget.value }
+                          : x,
+                      ),
+                    )
                   }
                   placeholder={
-                    type === "A" ? "203.0.113.10"
-                      : type === "AAAA" ? "2001:db8::10"
-                      : type === "TXT" ? "v=spf1 include:_spf.google.com ~all"
-                      : type === "CAA" ? '0 issue "letsencrypt.org"'
-                      : "target.example.com."
+                    type === "A"
+                      ? "203.0.113.10"
+                      : type === "AAAA"
+                        ? "2001:db8::10"
+                        : type === "TXT"
+                          ? "v=spf1 include:_spf.google.com ~all"
+                          : type === "CAA"
+                            ? '0 issue "letsencrypt.org"'
+                            : "target.example.com."
                   }
                 />
               </Grid.Col>
@@ -140,7 +216,15 @@ export function RecordSetModal({
                   <NumberInput
                     label="Priority"
                     value={v.priority ?? 10}
-                    onChange={(val) => setValues((p) => p.map((x) => (x.id === v.id ? { ...x, priority: Number(val ?? 10) } : x)))}
+                    onChange={(val) =>
+                      setValues((p) =>
+                        p.map((x) =>
+                          x.id === v.id
+                            ? { ...x, priority: Number(val ?? 10) }
+                            : x,
+                        ),
+                      )
+                    }
                   />
                 </Grid.Col>
               ) : null}
@@ -151,22 +235,47 @@ export function RecordSetModal({
                     <NumberInput
                       label="Priority"
                       value={v.priority ?? 10}
-                      onChange={(val) => setValues((p) => p.map((x) => (x.id === v.id ? { ...x, priority: Number(val ?? 10) } : x)))}
+                      onChange={(val) =>
+                        setValues((p) =>
+                          p.map((x) =>
+                            x.id === v.id
+                              ? { ...x, priority: Number(val ?? 10) }
+                              : x,
+                          ),
+                        )
+                      }
                     />
                   </Grid.Col>
                   <Grid.Col span={{ base: 12, md: 2 }}>
                     <NumberInput
                       label="Weight"
                       value={v.weight ?? 5}
-                      onChange={(val) => setValues((p) => p.map((x) => (x.id === v.id ? { ...x, weight: Number(val ?? 5) } : x)))}
+                      onChange={(val) =>
+                        setValues((p) =>
+                          p.map((x) =>
+                            x.id === v.id
+                              ? { ...x, weight: Number(val ?? 5) }
+                              : x,
+                          ),
+                        )
+                      }
                     />
                   </Grid.Col>
                   <Grid.Col span={{ base: 12, md: 2 }}>
                     <NumberInput
                       label="Port"
                       value={v.port ?? 443}
-                      onChange={(val) => setValues((p) => p.map((x) => (x.id === v.id ? { ...x, port: Number(val ?? 443) } : x)))}
-                      min={0} max={65535}
+                      onChange={(val) =>
+                        setValues((p) =>
+                          p.map((x) =>
+                            x.id === v.id
+                              ? { ...x, port: Number(val ?? 443) }
+                              : x,
+                          ),
+                        )
+                      }
+                      min={0}
+                      max={65535}
                     />
                   </Grid.Col>
                 </>
@@ -177,7 +286,9 @@ export function RecordSetModal({
                   variant="default"
                   color="red"
                   disabled={values.length === 1}
-                  onClick={() => setValues((p) => p.filter((x) => x.id !== v.id))}
+                  onClick={() =>
+                    setValues((p) => p.filter((x) => x.id !== v.id))
+                  }
                 >
                   Remove
                 </Button>
@@ -185,10 +296,19 @@ export function RecordSetModal({
             </Grid>
           ))}
           <Group justify="space-between">
-            <Button variant="light" onClick={() => setValues((p) => [...p, { id: uid(), value: "" }])}>Add value</Button>
+            <Button
+              variant="light"
+              onClick={() => setValues((p) => [...p, { id: uid(), value: "" }])}
+            >
+              Add value
+            </Button>
             <Group>
-              <Button variant="default" onClick={onClose}>Cancel</Button>
-              <Button onClick={save}>{mode === "create" ? "Create" : "Save"}</Button>
+              <Button variant="default" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button onClick={save}>
+                {mode === "create" ? "Create" : "Save"}
+              </Button>
             </Group>
           </Group>
         </Stack>

@@ -21,7 +21,7 @@ export const recordsetsApi = {
     const encoded = encodeURIComponent(zoneName);
     return api.put<{ ok: boolean; count: number }>(
       `/zones/${encoded}/recordsets`,
-      recordsets
+      recordsets,
     );
   },
 };

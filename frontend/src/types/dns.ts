@@ -1,7 +1,16 @@
 import type { ApiNameServer } from "../api/types";
 
-export type ZoneType = "public" | "private";
-export type RecordType = "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "SRV" | "NS" | "PTR" | "CAA";
+export type ZoneType = "public" | "private" | "reverse";
+export type RecordType =
+  | "A"
+  | "AAAA"
+  | "CNAME"
+  | "MX"
+  | "TXT"
+  | "SRV"
+  | "NS"
+  | "PTR"
+  | "CAA";
 
 export type Zone = {
   id: string;
@@ -19,8 +28,8 @@ export type Zone = {
   notifyTargets: string[];
 
   soa: {
-    primaryNs: string;   // ns1.example.com.
-    adminEmail: string;  // hostmaster.example.com.
+    primaryNs: string; // ns1.example.com.
+    adminEmail: string; // hostmaster.example.com.
     refresh: number;
     retry: number;
     expire: number;
@@ -35,14 +44,14 @@ export type RecordValue = {
   id: string;
   value: string;
   priority?: number; // MX/SRV
-  weight?: number;   // SRV
-  port?: number;     // SRV
+  weight?: number; // SRV
+  port?: number; // SRV
 };
 
 export type RecordSet = {
   id: string;
   zoneId: string;
-  name: string;  // FQDN ending with '.'
+  name: string; // FQDN ending with '.'
   type: RecordType;
   ttl?: number;
   values: RecordValue[];

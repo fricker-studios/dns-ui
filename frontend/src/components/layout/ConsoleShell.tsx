@@ -4,30 +4,40 @@ import {
   Box,
   Button,
   Container,
+  Drawer,
   Group,
   Kbd,
   Text,
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import { notifications } from "@mantine/notifications";
-import { IconNetwork, IconPlus, IconRefresh, IconServer, IconSettings } from "@tabler/icons-react";
+import {
+  IconNetwork,
+  IconPlus,
+  IconRefresh,
+  IconSettings,
+} from "@tabler/icons-react";
 
 import { ZonesSidebar } from "../zones/ZonesSidebar";
 import { RecordSetModal } from "../records/RecordSetModal";
-import { DelegationDrawer } from "../delegation/DelegationDrawer";
+import { SettingsPage } from "../settings/SettingsPage";
 import { useDnsStore } from "../../state/DnsStore";
 
 export function ConsoleShell({ children }: { children: React.ReactNode }) {
   const { state, activeZone, applyPendingChanges } = useDnsStore();
 
   const pending = useMemo(
-    () => activeZone ? state.changes.filter((c) => c.zoneId === activeZone.id && c.status === "PENDING").length : 0,
-    [state.changes, activeZone]
+    () =>
+      activeZone
+        ? state.changes.filter(
+            (c) => c.zoneId === activeZone.id && c.status === "PENDING",
+          ).length
+        : 0,
+    [state.changes, activeZone],
   );
 
   const [recordModalOpen, setRecordModalOpen] = useState(false);
-  const [delegationOpen, setDelegationOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <>
@@ -43,7 +53,9 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 <IconNetwork size={18} />
               </ThemeIcon>
               <Box>
-                <Title order={4} style={{ lineHeight: 1.1 }}>DNS Console</Title>
+                <Title order={4} style={{ lineHeight: 1.1 }}>
+                  DNS Console
+                </Title>
                 <Text size="xs" c="dimmed">
                   BIND-style zones • recordsets • delegation • exports • changes
                   {" · "}
@@ -53,14 +65,14 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             </Group>
 
             <Group>
-              <Button leftSection={<IconPlus size={16} />} onClick={() => setRecordModalOpen(true)}>
+              <Button
+                leftSection={<IconPlus size={16} />}
+                onClick={() => setRecordModalOpen(true)}
+              >
                 Create record
               </Button>
-              <Button variant="light" leftSection={<IconServer size={16} />} onClick={() => setDelegationOpen(true)}>
-                Delegate subdomain
-              </Button>
               <Button
-                variant={pending ? "filled" : "default"}
+                variant="light"
                 leftSection={<IconRefresh size={16} />}
                 disabled={!activeZone || pending === 0}
                 onClick={() => {
@@ -72,12 +84,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
               <Button
                 variant="default"
                 leftSection={<IconSettings size={16} />}
-                onClick={() =>
-                  notifications.show({
-                    title: "Zone settings",
-                    message: "Settings panel can be added here (SOA, ACLs, DNSSEC).",
-                  })
-                }
+                onClick={() => setSettingsOpen(true)}
               >
                 Settings
               </Button>
@@ -94,8 +101,24 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
         </AppShell.Main>
       </AppShell>
 
-      <RecordSetModal opened={recordModalOpen} onClose={() => setRecordModalOpen(false)} />
-      <DelegationDrawer opened={delegationOpen} onClose={() => setDelegationOpen(false)} />
+      <RecordSetModal
+        opened={recordModalOpen}
+        onClose={() => setRecordModalOpen(false)}
+      />
+
+      <Drawer
+        opened={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        size="xl"
+        title={
+          <Group>
+            <IconSettings size={20} />
+            <Text fw={600}>BIND Server Configuration</Text>
+          </Group>
+        }
+      >
+        <SettingsPage />
+      </Drawer>
     </>
   );
 }

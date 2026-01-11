@@ -31,11 +31,9 @@ runserver: build
 	docker compose up -d $(APP_NAME)
 
 pretty:
-	docker compose up -d $(APP_NAME)
-	docker compose run --rm $(APP_NAME) black .
+	black ./backend
 	npm --prefix=frontend run prettier:write
 
 lint:
-	docker compose up -d $(APP_NAME)
-	docker compose run --rm $(APP_NAME) flake8 .
+	flake8 .
 	npm --prefix=frontend run eslint

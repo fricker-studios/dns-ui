@@ -3,7 +3,12 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from backend.models import RecordSet
-from backend.bind_files import read_managed_include, parse_managed_zones, validate_zone, rndc_reload
+from backend.bind_files import (
+    read_managed_include,
+    parse_managed_zones,
+    validate_zone,
+    rndc_reload,
+)
 from backend.dns_zone import read_zone_file, write_zone_recordsets
 from backend.settings import settings
 

@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
-import { Button, Card, Code, Grid, Group, Loader, ScrollArea, Text } from "@mantine/core";
+import {
+  Button,
+  Card,
+  Code,
+  Grid,
+  Group,
+  Loader,
+  ScrollArea,
+  Text,
+} from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { computeNamedConfSnippet, computeZoneFile } from "../../lib/bind";
 import { useDnsStore } from "../../state/DnsStore";
@@ -9,12 +18,15 @@ export function ExportsPage() {
   const { activeZone, zoneRecordSets } = useDnsStore();
   const { exportZoneFile, loading } = useZoneFileExport();
   const [apiZoneFile, setApiZoneFile] = useState<string>("");
-  
-  const localZoneFile = useMemo(() => 
-    activeZone ? computeZoneFile(activeZone, zoneRecordSets) : "", 
-    [activeZone, zoneRecordSets]
+
+  const localZoneFile = useMemo(
+    () => (activeZone ? computeZoneFile(activeZone, zoneRecordSets) : ""),
+    [activeZone, zoneRecordSets],
   );
-  const named = useMemo(() => activeZone ? computeNamedConfSnippet(activeZone) : "", [activeZone]);
+  const named = useMemo(
+    () => (activeZone ? computeNamedConfSnippet(activeZone) : ""),
+    [activeZone],
+  );
 
   useEffect(() => {
     if (activeZone) {
@@ -39,7 +51,12 @@ export function ExportsPage() {
         <Text fw={800}>Exports</Text>
         <Button
           variant="light"
-          onClick={() => notifications.show({ title: "Tip", message: "Wire this to download/copy in a real app." })}
+          onClick={() =>
+            notifications.show({
+              title: "Tip",
+              message: "Wire this to download/copy in a real app.",
+            })
+          }
         >
           Actions (stub)
         </Button>
@@ -47,25 +64,37 @@ export function ExportsPage() {
 
       <Grid>
         <Grid.Col span={{ base: 12, md: 6 }}>
-          <Text fw={700} mb="xs">Zone file (from API)</Text>
+          <Text fw={700} mb="xs">
+            Zone file (from API)
+          </Text>
           <ScrollArea h={420} type="hover">
             {loading ? (
               <Loader size="sm" />
             ) : (
-              <Code block style={{ whiteSpace: "pre" }}>{apiZoneFile || "No data"}</Code>
+              <Code block style={{ whiteSpace: "pre" }}>
+                {apiZoneFile || "No data"}
+              </Code>
             )}
           </ScrollArea>
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 6 }}>
-          <Text fw={700} mb="xs">Zone file (local preview)</Text>
+          <Text fw={700} mb="xs">
+            Zone file (local preview)
+          </Text>
           <ScrollArea h={420} type="hover">
-            <Code block style={{ whiteSpace: "pre" }}>{localZoneFile}</Code>
+            <Code block style={{ whiteSpace: "pre" }}>
+              {localZoneFile}
+            </Code>
           </ScrollArea>
         </Grid.Col>
         <Grid.Col span={{ base: 12 }}>
-          <Text fw={700} mb="xs">named.conf snippet</Text>
+          <Text fw={700} mb="xs">
+            named.conf snippet
+          </Text>
           <ScrollArea h={280} type="hover">
-            <Code block style={{ whiteSpace: "pre" }}>{named}</Code>
+            <Code block style={{ whiteSpace: "pre" }}>
+              {named}
+            </Code>
           </ScrollArea>
         </Grid.Col>
       </Grid>

@@ -12,23 +12,34 @@ import {
   ThemeIcon,
   Title,
 } from "@mantine/core";
-import { IconGlobe, IconLock, IconPlus, IconSearch } from "@tabler/icons-react";
+import {
+  IconGlobe,
+  IconLock,
+  IconPlus,
+  IconSearch,
+  IconArrowBack,
+} from "@tabler/icons-react";
 import { useDnsStore } from "../../state/DnsStore";
 import { humanizeZoneName } from "../../lib/bind";
 import { CreateZoneModal } from "./CreateZoneModal";
 
 export function ZonesSidebar() {
-  const { state, setActiveZone, state: { activeZoneId } } = useDnsStore();
+  const {
+    state,
+    setActiveZone,
+    state: { activeZoneId },
+  } = useDnsStore();
   const [query, setQuery] = useState("");
   const [createOpen, setCreateOpen] = useState(false);
 
   const zones = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return state.zones;
-    return state.zones.filter((z) =>
-      z.name.toLowerCase().includes(q) ||
-      z.tags.some((t) => t.toLowerCase().includes(q)) ||
-      (z.comment ?? "").toLowerCase().includes(q)
+    return state.zones.filter(
+      (z) =>
+        z.name.toLowerCase().includes(q) ||
+        z.tags.some((t) => t.toLowerCase().includes(q)) ||
+        (z.comment ?? "").toLowerCase().includes(q),
     );
   }, [state.zones, query]);
 
@@ -38,13 +49,22 @@ export function ZonesSidebar() {
         <Stack gap="sm" h="100%">
           <Group justify="space-between">
             <Title order={5}>Hosted zones</Title>
-            <ActionIcon variant="default" onClick={() => setCreateOpen(true)} title="Create zone">
+            <ActionIcon
+              variant="default"
+              onClick={() => setCreateOpen(true)}
+              title="Create zone"
+            >
               <IconPlus size={18} />
             </ActionIcon>
           </Group>
-          <Text c="dimmed" size="sm">No zones found. Create one to get started.</Text>
+          <Text c="dimmed" size="sm">
+            No zones found. Create one to get started.
+          </Text>
         </Stack>
-        <CreateZoneModal opened={createOpen} onClose={() => setCreateOpen(false)} />
+        <CreateZoneModal
+          opened={createOpen}
+          onClose={() => setCreateOpen(false)}
+        />
       </>
     );
   }
@@ -56,7 +76,11 @@ export function ZonesSidebar() {
           <Group gap="xs">
             <Title order={5}>Hosted zones</Title>
           </Group>
-          <ActionIcon variant="default" onClick={() => setCreateOpen(true)} title="Create zone">
+          <ActionIcon
+            variant="default"
+            onClick={() => setCreateOpen(true)}
+            title="Create zone"
+          >
             <IconPlus size={18} />
           </ActionIcon>
         </Group>
@@ -72,6 +96,14 @@ export function ZonesSidebar() {
           <Stack gap={8}>
             {zones.map((z) => {
               const selected = z.id === activeZoneId;
+              const isReverse = z.type === "reverse";
+              const icon = isReverse ? (
+                <IconArrowBack size={14} />
+              ) : z.type === "public" ? (
+                <IconGlobe size={14} />
+              ) : (
+                <IconLock size={14} />
+              );
               return (
                 <Paper
                   key={z.id}
@@ -85,24 +117,31 @@ export function ZonesSidebar() {
                     <Box>
                       <Group gap="xs">
                         <Text fw={700}>{humanizeZoneName(z.name)}</Text>
-                        <Badge
-                          variant="light"
-                          leftSection={z.type === "public" ? <IconGlobe size={14} /> : <IconLock size={14} />}
-                        >
+                        <Badge variant="light" leftSection={icon}>
                           {z.type}
                         </Badge>
                       </Group>
                       {z.comment ? (
-                        <Text size="xs" c="dimmed" mt={6} lineClamp={1}>{z.comment}</Text>
+                        <Text size="xs" c="dimmed" mt={6} lineClamp={1}>
+                          {z.comment}
+                        </Text>
                       ) : null}
                       <Group gap={6} mt="sm" wrap="wrap">
                         {z.tags.slice(0, 4).map((t) => (
-                          <Badge key={t} variant="outline" radius="sm">{t}</Badge>
+                          <Badge key={t} variant="outline" radius="sm">
+                            {t}
+                          </Badge>
                         ))}
                       </Group>
                     </Box>
                     <ThemeIcon variant="light" radius="md">
-                      {z.type === "public" ? <IconGlobe size={16} /> : <IconLock size={16} />}
+                      {isReverse ? (
+                        <IconArrowBack size={16} />
+                      ) : z.type === "public" ? (
+                        <IconGlobe size={16} />
+                      ) : (
+                        <IconLock size={16} />
+                      )}
                     </ThemeIcon>
                   </Group>
                 </Paper>
@@ -118,7 +157,10 @@ export function ZonesSidebar() {
         </ScrollArea>
       </Stack>
 
-      <CreateZoneModal opened={createOpen} onClose={() => setCreateOpen(false)} />
+      <CreateZoneModal
+        opened={createOpen}
+        onClose={() => setCreateOpen(false)}
+      />
     </>
   );
 }

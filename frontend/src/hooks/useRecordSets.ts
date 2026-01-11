@@ -22,7 +22,9 @@ export function useRecordSets(zoneName: string | null) {
       const data = await recordsetsApi.list(zoneName);
       setRecordsets(data);
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Failed to fetch recordsets");
+      setError(
+        err instanceof ApiError ? err.message : "Failed to fetch recordsets",
+      );
       console.error("Error fetching recordsets:", err);
     } finally {
       setLoading(false);
@@ -43,7 +45,7 @@ export function useReplaceRecordSets() {
 
   const replaceRecordSets = async (
     zoneName: string,
-    recordsets: ApiRecordSet[]
+    recordsets: ApiRecordSet[],
   ): Promise<boolean> => {
     try {
       setLoading(true);
@@ -51,7 +53,8 @@ export function useReplaceRecordSets() {
       await recordsetsApi.replace(zoneName, recordsets);
       return true;
     } catch (err) {
-      const message = err instanceof ApiError ? err.message : "Failed to update recordsets";
+      const message =
+        err instanceof ApiError ? err.message : "Failed to update recordsets";
       setError(message);
       console.error("Error updating recordsets:", err);
       return false;

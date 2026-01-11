@@ -1,13 +1,35 @@
 import { useMemo, useState } from "react";
-import { Badge, Card, Checkbox, Group, Select, Stack, Text, TextInput } from "@mantine/core";
+import {
+  Badge,
+  Card,
+  Checkbox,
+  Group,
+  Select,
+  Stack,
+  Text,
+  TextInput,
+} from "@mantine/core";
 import { IconSearch } from "@tabler/icons-react";
 import type { RecordType } from "../../types/dns";
 import { useDnsStore } from "../../state/DnsStore";
 import { RecordSetTable } from "./RecordSetTable";
 
-const types: (RecordType | "ALL")[] = ["ALL","A","AAAA","CNAME","MX","TXT","SRV","NS","PTR","CAA"];
+const types: (RecordType | "ALL")[] = [
+  "ALL",
+  "A",
+  "AAAA",
+  "CNAME",
+  "MX",
+  "TXT",
+  "SRV",
+  "NS",
+  "PTR",
+  "CAA",
+];
 
-export function RecordsPage({ initialFilter }: { initialFilter?: RecordType } = {}) {
+export function RecordsPage({
+  initialFilter,
+}: { initialFilter?: RecordType } = {}) {
   const { activeZone, zoneRecordSets } = useDnsStore();
 
   const [query, setQuery] = useState("");
@@ -59,7 +81,10 @@ export function RecordsPage({ initialFilter }: { initialFilter?: RecordType } = 
               w={140}
               value={type}
               onChange={(v) => setType((v as any) ?? "ALL")}
-              data={types.map((t) => ({ value: t, label: t === "ALL" ? "All types" : t }))}
+              data={types.map((t) => ({
+                value: t,
+                label: t === "ALL" ? "All types" : t,
+              }))}
             />
             <Checkbox
               label="Delegations only"

@@ -2,8 +2,7 @@
  * API types matching backend models
  */
 
-export type ZoneType = "public" | "private";
-export type RecordType = "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "SRV" | "NS" | "PTR" | "CAA";
+import type { RecordType, ZoneType } from "../types/dns";
 
 export interface ApiZone {
   name: string; // FQDN with trailing dot

@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     # bind locations
     named_conf: str = "/etc/bind/named.conf"
     named_conf_local: str = "/etc/bind/named.conf.local"
+    named_conf_options: str = "/etc/bind/named.conf.options"
 
     # file the API manages (included by named.conf.local)
     managed_include: str = "/etc/bind/managed-zones.conf"

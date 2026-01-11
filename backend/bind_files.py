@@ -12,8 +12,7 @@ from backend.settings import settings
 
 
 ZONE_STANZA_RE = re.compile(
-    r'zone\s+"(?P<zone>[^"]+)"\s*\{\s*(?P<body>.*?)\s*\};',
-    re.DOTALL | re.MULTILINE
+    r'zone\s+"(?P<zone>[^"]+)"\s*\{\s*(?P<body>.*?)\s*\};', re.DOTALL | re.MULTILINE
 )
 
 FILE_RE = re.compile(r'file\s+"(?P<file>[^"]+)";')
@@ -48,7 +47,9 @@ def _lock_file(fd):
 def require_managed_include_ready():
     if settings.require_managed_include_present:
         if not os.path.exists(settings.managed_include):
-            raise FileNotFoundError(f"managed include missing: {settings.managed_include}")
+            raise FileNotFoundError(
+                f"managed include missing: {settings.managed_include}"
+            )
     if not os.path.exists(settings.managed_zone_dir):
         raise FileNotFoundError(f"zone dir missing: {settings.managed_zone_dir}")
 
@@ -72,8 +73,12 @@ def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
     return zones
 
 
-def build_zone_stanza(zone_name: str, file_path: str, allow_transfer: List[str], also_notify: List[str]) -> str:
-    allow = f"allow-transfer {{ {'; '.join(allow_transfer)}; }};" if allow_transfer else ""
+def build_zone_stanza(
+    zone_name: str, file_path: str, allow_transfer: List[str], also_notify: List[str]
+) -> str:
+    allow = (
+        f"allow-transfer {{ {'; '.join(allow_transfer)}; }};" if allow_transfer else ""
+    )
     notify = f"also-notify {{ {'; '.join(also_notify)}; }};" if also_notify else ""
     # keep it minimal; you can add more knobs later
     return (
@@ -86,7 +91,9 @@ def build_zone_stanza(zone_name: str, file_path: str, allow_transfer: List[str],
     )
 
 
-def upsert_zone_stanza(zone_name: str, file_path: str, allow_transfer: List[str], also_notify: List[str]) -> None:
+def upsert_zone_stanza(
+    zone_name: str, file_path: str, allow_transfer: List[str], also_notify: List[str]
+) -> None:
     require_managed_include_ready()
 
     # lock include file while editing

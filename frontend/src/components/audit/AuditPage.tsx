@@ -3,23 +3,32 @@ import { Card, Paper, Stack, Text, Group, Badge } from "@mantine/core";
 import { useDnsStore } from "../../state/DnsStore";
 
 function fmt(iso: string) {
-  try { return new Date(iso).toLocaleString(); } catch { return iso; }
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
 }
 
 export function AuditPage() {
   const { state, activeZone } = useDnsStore();
 
   const list = useMemo(
-    () => activeZone ? state.audit.filter((a) => a.zoneId === activeZone.id) : [],
-    [state.audit, activeZone]
+    () =>
+      activeZone ? state.audit.filter((a) => a.zoneId === activeZone.id) : [],
+    [state.audit, activeZone],
   );
 
   return (
     <Card withBorder radius="md" p="lg">
-      <Text fw={800} mb="sm">Audit log</Text>
+      <Text fw={800} mb="sm">
+        Audit log
+      </Text>
 
       {list.length === 0 ? (
-        <Text c="dimmed" size="sm">No audit events yet.</Text>
+        <Text c="dimmed" size="sm">
+          No audit events yet.
+        </Text>
       ) : (
         <Stack>
           {list.map((a) => (
@@ -31,7 +40,9 @@ export function AuditPage() {
                     <Text fw={700}>{a.action}</Text>
                   </Group>
                   <Text size="sm">{a.detail}</Text>
-                  <Text size="xs" c="dimmed">{fmt(a.at)}</Text>
+                  <Text size="xs" c="dimmed">
+                    {fmt(a.at)}
+                  </Text>
                 </Stack>
               </Group>
             </Paper>

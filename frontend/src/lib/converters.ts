@@ -3,7 +3,13 @@
  */
 
 import type { Zone, RecordSet, RecordValue } from "../types/dns";
-import type { ApiZone, ApiRecordSet, ApiRecordValue, ApiZoneCreate, ApiNameServer } from "../api/types";
+import type {
+  ApiZone,
+  ApiRecordSet,
+  ApiRecordValue,
+  ApiZoneCreate,
+  ApiNameServer,
+} from "../api/types";
 import { uid, nowIso, normalizeFqdn } from "../lib/bind";
 
 /**
@@ -36,14 +42,18 @@ export function apiZoneToZone(apiZone: ApiZone): Zone {
 /**
  * Convert frontend zone to API zone create
  */
-export function zoneToApiZoneCreate(zone: Partial<Zone>, nameservers: ApiNameServer[]): ApiZoneCreate {
+export function zoneToApiZoneCreate(
+  zone: Partial<Zone>,
+  nameservers: ApiNameServer[],
+): ApiZoneCreate {
   return {
     name: normalizeFqdn(zone.name || ""),
     type: zone.type || "public",
     default_ttl: zone.defaultTtl || 300,
     allow_transfer: zone.allowTransferTo || [],
     also_notify: zone.notifyTargets || [],
-    primary_ns: zone.soa?.primaryNs || nameservers[0]?.hostname || "ns1.example.com.",
+    primary_ns:
+      zone.soa?.primaryNs || nameservers[0]?.hostname || "ns1.example.com.",
     nameservers: nameservers,
   };
 }
@@ -51,7 +61,10 @@ export function zoneToApiZoneCreate(zone: Partial<Zone>, nameservers: ApiNameSer
 /**
  * Convert API recordset to frontend recordset
  */
-export function apiRecordSetToRecordSet(apiRs: ApiRecordSet, zoneId: string): RecordSet {
+export function apiRecordSetToRecordSet(
+  apiRs: ApiRecordSet,
+  zoneId: string,
+): RecordSet {
   return {
     id: uid(),
     zoneId,
@@ -98,10 +111,10 @@ function recordValueToApiRecordValue(value: RecordValue): ApiRecordValue {
   const apiValue: ApiRecordValue = {
     value: value.value,
   };
-  
+
   if (value.priority !== undefined) apiValue.priority = value.priority;
   if (value.weight !== undefined) apiValue.weight = value.weight;
   if (value.port !== undefined) apiValue.port = value.port;
-  
+
   return apiValue;
 }
