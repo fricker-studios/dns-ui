@@ -1,5 +1,16 @@
 import { useMemo } from "react";
-import { Badge, Card, Group, Paper, Stack, Text } from "@mantine/core";
+import {
+  ActionIcon,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Paper,
+  Stack,
+  Text,
+  Tooltip,
+} from "@mantine/core";
+import { IconReload, IconX } from "@tabler/icons-react";
 import { useDnsStore } from "../../state/DnsStore";
 
 function fmt(iso: string) {
@@ -11,7 +22,7 @@ function fmt(iso: string) {
 }
 
 export function ChangesPage() {
-  const { state, activeZone } = useDnsStore();
+  const { state, activeZone, revertChange, revertAllChanges } = useDnsStore();
 
   const list = useMemo(
     () =>
@@ -19,11 +30,26 @@ export function ChangesPage() {
     [state.changes, activeZone],
   );
 
+  const pendingCount = useMemo(
+    () => list.filter((c) => c.status === "PENDING").length,
+    [list],
+  );
+
   return (
     <Card withBorder radius="md" p="lg">
-      <Text fw={800} mb="sm">
-        Change requests
-      </Text>
+      <Group justify="space-between" mb="sm">
+        <Text fw={800}>Change requests</Text>
+        {pendingCount > 0 && activeZone && (
+          <Button
+            variant="light"
+            color="orange"
+            leftSection={<IconReload size={16} />}
+            onClick={() => revertAllChanges(activeZone.id)}
+          >
+            Revert all ({pendingCount})
+          </Button>
+        )}
+      </Group>
 
       {list.length === 0 ? (
         <Text c="dimmed" size="sm">
@@ -35,7 +61,7 @@ export function ChangesPage() {
           {list.map((c) => (
             <Paper key={c.id} withBorder p="md" radius="md">
               <Group justify="space-between" align="flex-start">
-                <Stack gap={4}>
+                <Stack gap={4} style={{ flex: 1 }}>
                   <Group gap="xs">
                     <Text fw={700}>{c.summary}</Text>
                     <Badge
@@ -67,6 +93,18 @@ export function ChangesPage() {
                     ))}
                   </Stack>
                 </Stack>
+                {c.status === "PENDING" && (
+                  <Tooltip label="Revert this change">
+                    <ActionIcon
+                      variant="light"
+                      color="orange"
+                      size="lg"
+                      onClick={() => revertChange(c.id)}
+                    >
+                      <IconX size={18} />
+                    </ActionIcon>
+                  </Tooltip>
+                )}
               </Group>
             </Paper>
           ))}

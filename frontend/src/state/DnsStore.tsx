@@ -37,6 +37,8 @@ type Action =
   | { type: "record/delete"; recordSetId: string }
   | { type: "change/add"; change: ChangeRequest }
   | { type: "change/applyAll"; zoneId: string }
+  | { type: "change/revert"; changeId: string }
+  | { type: "change/revertAll"; zoneId: string }
   | { type: "audit/add"; event: AuditEvent }
   | { type: "zone/update"; zone: Zone };
 
@@ -109,6 +111,20 @@ function reducer(state: State, action: Action): State {
         ),
       };
 
+    case "change/revert":
+      return {
+        ...state,
+        changes: state.changes.filter((c) => c.id !== action.changeId),
+      };
+
+    case "change/revertAll":
+      return {
+        ...state,
+        changes: state.changes.filter(
+          (c) => !(c.zoneId === action.zoneId && c.status === "PENDING"),
+        ),
+      };
+
     case "audit/add":
       return { ...state, audit: [action.event, ...state.audit] };
 
@@ -123,6 +139,8 @@ type Store = {
   zoneRecordSets: RecordSet[];
   loading: boolean;
 
+  revertChange: (changeId: string) => void;
+  revertAllChanges: (zoneId: string) => void;
   createZone: (zone: Zone) => Promise<void>;
   updateZone: (zone: Zone) => void;
   setActiveZone: (zoneId: string, zoneName: string) => void;
@@ -306,6 +324,43 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
           });
         }
       },
+
+      revertChange: (changeId) => {
+        const change = state.changes.find((c) => c.id === changeId);
+        if (change && change.status === "PENDING") {
+          dispatch({ type: "change/revert", changeId });
+          log(
+            change.zoneId,
+            "Reverted change",
+            `Discarded: ${change.summary}`,
+          );
+          notifications.show({
+            color: "blue",
+            title: "Change reverted",
+            message: change.summary,
+          });
+          // Refresh recordsets to restore original state
+          refetchRecordSetsApi();
+        }
+      },
+
+      revertAllChanges: (zoneId) => {
+        const pendingCount = state.changes.filter(
+          (c) => c.zoneId === zoneId && c.status === "PENDING",
+        ).length;
+        if (pendingCount > 0) {
+          dispatch({ type: "change/revertAll", zoneId });
+          log(zoneId, "Reverted all changes", `Discarded ${pendingCount} changes`);
+          notifications.show({
+            color: "blue",
+            title: "All changes reverted",
+            message: `${pendingCount} pending changes discarded`,
+          });
+          // Refresh recordsets to restore original state
+          refetchRecordSetsApi();
+        }
+      },
+            
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state, activeZone, zoneRecordSets, zonesLoading, recordsetsLoading]);
