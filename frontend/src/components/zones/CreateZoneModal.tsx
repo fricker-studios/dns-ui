@@ -41,6 +41,7 @@ export function CreateZoneModal({
   const { createZone: createZoneApi } = useCreateZone();
   const [name, setName] = useState("");
   const [type, setType] = useState<ZoneType>("forward");
+  const [role, setRole] = useState<"primary" | "secondary">("primary");
   const [tags, setTags] = useState<string[]>([]);
   const [dnssec, setDnssec] = useState(false);
   const [nameservers, setNameservers] = useState<NameServerEntry[]>([
@@ -87,39 +88,43 @@ export function CreateZoneModal({
     const validNameservers = nameservers.filter(
       (ns) => ns.hostname.trim() && ns.ipv4.trim(),
     );
-    if (validNameservers.length === 0) {
-      notifications.show({
-        color: "red",
-        title: "Nameservers required",
-        message: "Add at least one nameserver",
-      });
-      return;
-    }
-
-    // For reverse zones, validate that nameservers are FQDNs
-    if (type === "reverse") {
-      const invalidNs = validNameservers.find(
-        (ns) => !ns.hostname.includes(".") || ns.hostname === ".",
-      );
-      if (invalidNs) {
+    
+    // For secondary zones, we don't need nameservers
+    if (role === "primary") {
+      if (validNameservers.length === 0) {
         notifications.show({
           color: "red",
-          title: "Invalid nameserver",
-          message:
-            "Reverse zones require fully qualified nameserver hostnames (e.g., ns1.example.com)",
+          title: "Nameservers required",
+          message: "Add at least one nameserver for primary zones",
         });
         return;
       }
-    }
 
-    const primaryNs = nameservers.find((ns) => ns.id === primaryNsId);
-    if (!primaryNs || !primaryNs.hostname.trim()) {
-      notifications.show({
-        color: "red",
-        title: "Primary NS required",
-        message: "Select a primary nameserver",
-      });
-      return;
+      // For reverse zones, validate that nameservers are FQDNs
+      if (type === "reverse") {
+        const invalidNs = validNameservers.find(
+          (ns) => !ns.hostname.includes(".") || ns.hostname === ".",
+        );
+        if (invalidNs) {
+          notifications.show({
+            color: "red",
+            title: "Invalid nameserver",
+            message:
+              "Reverse zones require fully qualified nameserver hostnames (e.g., ns1.example.com)",
+          });
+          return;
+        }
+      }
+
+      const primaryNs = nameservers.find((ns) => ns.id === primaryNsId);
+      if (!primaryNs || !primaryNs.hostname.trim()) {
+        notifications.show({
+          color: "red",
+          title: "Primary NS required",
+          message: "Select a primary nameserver",
+        });
+        return;
+      }
     }
 
     const apiNameservers: ApiNameServer[] = validNameservers.map((ns) => ({
@@ -127,10 +132,13 @@ export function CreateZoneModal({
       ipv4: ns.ipv4.trim(),
     }));
 
+    const primaryNs = nameservers.find((ns) => ns.id === primaryNsId);
+    
     const z: Zone = {
       id: uid(),
       name: fqdn,
       type,
+      role,
       tags,
       dnssecEnabled: dnssec,
       createdAt: nowIso(),
@@ -139,7 +147,7 @@ export function CreateZoneModal({
       allowTransferTo: [],
       notifyTargets: [],
       soa: {
-        primaryNs: primaryNs.hostname,
+        primaryNs: primaryNs?.hostname || "ns1.example.com.",
         adminEmail: `hostmaster.${fqdn}`,
         refresh: 3600,
         retry: 600,
@@ -152,6 +160,7 @@ export function CreateZoneModal({
     console.log("Creating zone", z, apiNameservers);
 
     const apiPayload = zoneToApiZoneCreate(z, apiNameservers);
+    apiPayload.role = role; // Add zone role
     const apiZone = await createZoneApi(apiPayload);
 
     if (apiZone) {
@@ -172,6 +181,7 @@ export function CreateZoneModal({
     setTags([]);
     setDnssec(false);
     setType("forward");
+    setRole("primary");
     setNameservers([{ id: uid(), hostname: "", ipv4: "" }]);
     setPrimaryNsId("");
     setReverseNetwork("");
@@ -259,6 +269,24 @@ export function CreateZoneModal({
           ]}
         />
 
+        <SegmentedControl
+          value={role}
+          onChange={(v) => setRole(v as "primary" | "secondary")}
+          data={[
+            { value: "primary", label: "Primary" },
+            { value: "secondary", label: "Secondary" },
+          ]}
+        />
+
+        {role === "secondary" && (
+          <Paper p="md" withBorder>
+            <Text size="sm" c="dimmed">
+              Secondary zones replicate from the primary servers configured in Settings.
+              The zone will be automatically transferred from your primary DNS server.
+            </Text>
+          </Paper>
+        )}
+
         {type === "reverse" ? (
           <Stack gap="sm">
             <Radio.Group
@@ -308,14 +336,16 @@ export function CreateZoneModal({
           />
         )}
 
-        <Divider label="Nameservers" labelPosition="left" />
+        {role === "primary" && (
+          <>
+            <Divider label="Nameservers" labelPosition="left" />
 
-        <Paper withBorder p="md" radius="md">
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              Define the authoritative nameservers for this zone. Each NS will
-              have an A record created.
-            </Text>
+            <Paper withBorder p="md" radius="md">
+              <Stack gap="md">
+                <Text size="sm" c="dimmed">
+                  Define the authoritative nameservers for this zone. Each NS will
+                  have an A record created.
+                </Text>
 
             {nameservers.map((ns, index) => (
               <Paper key={ns.id} withBorder p="sm" radius="sm">
@@ -383,6 +413,8 @@ export function CreateZoneModal({
             </Button>
           </Stack>
         </Paper>
+          </>
+        )}
 
         <TagsInput
           label="Tags"
@@ -400,11 +432,13 @@ export function CreateZoneModal({
             "external",
           ].map((x) => ({ value: x, label: x }))}
         />
-        <Switch
-          checked={dnssec}
-          onChange={(e) => setDnssec(e.currentTarget.checked)}
-          label="Enable DNSSEC (UI stub)"
-        />
+        {role === "primary" && (
+          <Switch
+            checked={dnssec}
+            onChange={(e) => setDnssec(e.currentTarget.checked)}
+            label="Enable DNSSEC (UI stub)"
+          />
+        )}
         <Group justify="flex-end">
           <Button variant="default" onClick={handleClose}>
             Cancel

@@ -51,10 +51,13 @@ export function ZoneSettingsPage() {
     if (details) {
       setZoneDetails(details);
       setDefaultTtl(details.default_ttl);
-      setSoaRefresh(details.soa.refresh);
-      setSoaRetry(details.soa.retry);
-      setSoaExpire(details.soa.expire);
-      setSoaMinimum(details.soa.minimum);
+      // Only load SOA details for primary zones
+      if (details.soa) {
+        setSoaRefresh(details.soa.refresh);
+        setSoaRetry(details.soa.retry);
+        setSoaExpire(details.soa.expire);
+        setSoaMinimum(details.soa.minimum);
+      }
       setHasChanges(false);
     }
   };
@@ -66,11 +69,11 @@ export function ZoneSettingsPage() {
       default_ttl:
         defaultTtl !== zoneDetails.default_ttl ? defaultTtl : undefined,
       soa_refresh:
-        soaRefresh !== zoneDetails.soa.refresh ? soaRefresh : undefined,
-      soa_retry: soaRetry !== zoneDetails.soa.retry ? soaRetry : undefined,
-      soa_expire: soaExpire !== zoneDetails.soa.expire ? soaExpire : undefined,
+        zoneDetails.soa && soaRefresh !== zoneDetails.soa.refresh ? soaRefresh : undefined,
+      soa_retry: zoneDetails.soa && soaRetry !== zoneDetails.soa.retry ? soaRetry : undefined,
+      soa_expire: zoneDetails.soa && soaExpire !== zoneDetails.soa.expire ? soaExpire : undefined,
       soa_minimum:
-        soaMinimum !== zoneDetails.soa.minimum ? soaMinimum : undefined,
+        zoneDetails.soa && soaMinimum !== zoneDetails.soa.minimum ? soaMinimum : undefined,
     };
 
     // Remove undefined values
@@ -159,6 +162,13 @@ export function ZoneSettingsPage() {
 
   return (
     <Stack gap="lg">
+      {zoneDetails.role === "secondary" && (
+        <Alert color="blue" title="Secondary Zone">
+          This is a secondary zone that replicates from a primary server. 
+          SOA and recordset management is not available for secondary zones.
+        </Alert>
+      )}
+      
       <Paper withBorder p="md" radius="md">
         <Stack gap="md">
           <Group justify="space-between">
@@ -189,12 +199,14 @@ export function ZoneSettingsPage() {
             step={60}
           />
 
-          <Divider label="SOA Record Timers" labelPosition="left" />
+          {zoneDetails.soa && (
+            <>
+              <Divider label="SOA Record Timers" labelPosition="left" />
 
-          <Text size="sm" c="dimmed">
-            Start of Authority (SOA) record defines zone refresh timing and
-            behavior.
-          </Text>
+              <Text size="sm" c="dimmed">
+                Start of Authority (SOA) record defines zone refresh timing and
+                behavior.
+              </Text>
 
           <Group grow>
             <NumberInput
@@ -270,6 +282,8 @@ export function ZoneSettingsPage() {
               </Text>
             </Box>
           </Group>
+            </>
+          )}
         </Stack>
       </Paper>
 

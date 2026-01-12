@@ -22,9 +22,18 @@ export function ExportsPage() {
 
   useEffect(() => {
     if (activeZone) {
-      exportZoneFile(activeZone.name).then((data) => {
-        if (data) setApiZoneFile(data.text);
-      });
+      // Only try to export zone file for primary zones
+      if (activeZone.role !== "secondary") {
+        exportZoneFile(activeZone.name).then((data) => {
+          if (data) setApiZoneFile(data.text);
+        }).catch((err) => {
+          console.error("Failed to export zone file:", err);
+          setApiZoneFile("");
+        });
+      } else {
+        setApiZoneFile("");
+      }
+      
       exportZoneStanza(activeZone.name).then((data) => {
         if (data) setApiStanza(data.text);
       });
@@ -65,6 +74,12 @@ export function ExportsPage() {
           <ScrollArea h={420} type="hover">
             {zoneLoading ? (
               <Loader size="sm" />
+            ) : activeZone.role === "secondary" ? (
+              <Card withBorder p="md">
+                <Text size="sm" c="dimmed">
+                  Zone files cannot be exported for secondary zones. Secondary zones store their data in BIND's binary format after zone transfer from the primary server.
+                </Text>
+              </Card>
             ) : (
               <Code block style={{ whiteSpace: "pre" }}>
                 {apiZoneFile || "No data"}

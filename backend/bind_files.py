@@ -11,8 +11,44 @@ from typing import Dict, List, Tuple
 from backend.settings import settings
 
 
+# More robust regex that handles nested braces
+def parse_zone_stanza(text: str, start_pos: int = 0):
+    """Parse a single zone stanza starting at start_pos, handling nested braces."""
+    zone_match = re.match(r'zone\s+"([^"]+)"\s*\{', text[start_pos:])
+    if not zone_match:
+        return None
+    
+    zone_name = zone_match.group(1)
+    brace_start = start_pos + zone_match.end() - 1  # Position of opening {
+    
+    # Count braces to find the matching closing brace
+    brace_count = 1
+    pos = brace_start + 1
+    while pos < len(text) and brace_count > 0:
+        if text[pos] == '{':
+            brace_count += 1
+        elif text[pos] == '}':
+            brace_count -= 1
+        pos += 1
+    
+    if brace_count != 0:
+        return None  # Unmatched braces
+    
+    # Extract the full stanza
+    stanza_end = pos + 1 if pos < len(text) and text[pos] == ';' else pos
+    full_stanza = text[start_pos:stanza_end]
+    body = text[brace_start + 1:pos - 1]
+    
+    return {
+        'zone': zone_name,
+        'body': body,
+        'raw': full_stanza,
+        'end_pos': stanza_end
+    }
+
+
 ZONE_STANZA_RE = re.compile(
-    r'zone\s+"(?P<zone>[^"]+)"\s*\{\s*(?P<body>.*?)\s*\};', re.DOTALL | re.MULTILINE
+    r'zone\s+"(?P<zone>[^"]+)"\s*\{', re.MULTILINE
 )
 
 FILE_RE = re.compile(r'file\s+"(?P<file>[^"]+)";')
@@ -26,6 +62,7 @@ class ManagedZoneStanza:
     file_path: str
     allow_transfer: list[str]
     also_notify: list[str]
+    raw: str  # The full raw zone stanza text
 
 
 def _atomic_write(path: str, content: str, mode: int = 0o644) -> None:
@@ -64,13 +101,36 @@ def read_managed_include() -> str:
 
 def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
     zones: Dict[str, ManagedZoneStanza] = {}
-    for m in ZONE_STANZA_RE.finditer(text):
-        zone = m.group("zone").strip()
-        body = m.group("body")
+    print(f"DEBUG parse_managed_zones: input text length = {len(text)}")
+    
+    pos = 0
+    zone_count = 0
+    while pos < len(text):
+        stanza = parse_zone_stanza(text, pos)
+        if not stanza:
+            # Move forward to find next zone keyword
+            next_zone = text.find('zone', pos + 1)
+            if next_zone == -1:
+                break
+            pos = next_zone
+            continue
+        
+        zone_count += 1
+        zone = stanza['zone']
+        body = stanza['body']
+        raw = stanza['raw']
+        
+        print(f"DEBUG parse_managed_zones: processing zone '{zone}'")
+        print(f"DEBUG parse_managed_zones: body = {repr(body[:100])}...")
+        
         fmatch = FILE_RE.search(body)
         if not fmatch:
+            print(f"DEBUG parse_managed_zones: no file match for zone '{zone}', skipping")
+            pos = stanza['end_pos']
             continue
+        
         file_path = fmatch.group("file")
+        print(f"DEBUG parse_managed_zones: file_path = {file_path}")
 
         # Parse allow-transfer and also-notify
         allow_transfer: list[str] = []
@@ -94,30 +154,54 @@ def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
             file_path=file_path,
             allow_transfer=allow_transfer,
             also_notify=also_notify,
+            raw=raw,
         )
+        print(f"DEBUG parse_managed_zones: added zone '{zone}' to results")
+        pos = stanza['end_pos']
+    
+    print(f"DEBUG parse_managed_zones: found {zone_count} zone stanzas, returning {len(zones)} valid zones")
     return zones
 
 
 def build_zone_stanza(
-    zone_name: str, file_path: str, allow_transfer: List[str], also_notify: List[str]
+    zone_name: str,
+    file_path: str,
+    allow_transfer: List[str],
+    also_notify: List[str],
+    zone_role: str = "primary",
 ) -> str:
-    allow = (
-        f"allow-transfer {{ {'; '.join(allow_transfer)}; }};" if allow_transfer else ""
-    )
-    notify = f"also-notify {{ {'; '.join(also_notify)}; }};" if also_notify else ""
-    # keep it minimal; you can add more knobs later
-    return (
-        f'zone "{zone_name}" {{\n'
-        f"  type master;\n"
-        f'  file "{file_path}";\n'
-        f"  {allow}\n"
-        f"  {notify}\n"
-        f"}};\n"
-    )
+    if zone_role == "secondary":
+        # Secondary zone stanza - references masters, not a local file
+        # Note: BIND uses "slave" keyword for compatibility
+        return (
+            f'zone "{zone_name}" {{\n'
+            f"  type slave;\n"
+            f"  masters {{ primary-servers; }};\n"
+            f'  file "{file_path}";\n'
+            f"}};\n"
+        )
+    else:
+        # Primary zone stanza
+        allow = (
+            f"allow-transfer {{ {'; '.join(allow_transfer)}; }};" if allow_transfer else ""
+        )
+        notify = f"also-notify {{ {'; '.join(also_notify)}; }};" if also_notify else ""
+        return (
+            f'zone "{zone_name}" {{\n'
+            f"  type master;\n"
+            f'  file "{file_path}";\n'
+            f"  {allow}\n"
+            f"  {notify}\n"
+            f"}};\n"
+        )
 
 
 def upsert_zone_stanza(
-    zone_name: str, file_path: str, allow_transfer: List[str], also_notify: List[str]
+    zone_name: str,
+    file_path: str,
+    allow_transfer: List[str],
+    also_notify: List[str],
+    zone_role: str = "primary",
 ) -> None:
     require_managed_include_ready()
 
@@ -127,7 +211,9 @@ def upsert_zone_stanza(
         text = f.read()
         zones = parse_managed_zones(text)
 
-        stanza = build_zone_stanza(zone_name, file_path, allow_transfer, also_notify)
+        stanza = build_zone_stanza(
+            zone_name, file_path, allow_transfer, also_notify, zone_role
+        )
 
         if zone_name in zones:
             # replace existing stanza

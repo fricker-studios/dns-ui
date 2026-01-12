@@ -16,6 +16,7 @@ export type Zone = {
   id: string;
   name: string; // FQDN ending with '.'
   type: ZoneType;
+  role?: "primary" | "secondary";
   comment?: string;
   tags: string[];
   createdAt: string;

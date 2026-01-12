@@ -32,9 +32,13 @@ def list_zones():
             if (".in-addr.arpa" in zname or ".ip6.arpa" in zname)
             else "forward"
         )
+        # Determine zone role from stanza
+        zone_role = "secondary" if "type slave" in stanza.raw or "type secondary" in stanza.raw else "primary"
+        print(f"DEBUG: Zone {zname} - type: {zone_type}, role: {zone_role}")
         out.append(
-            Zone(name=zname, type=zone_type, file_path=stanza.file_path, options={})
+            Zone(name=zname, type=zone_type, role=zone_role, file_path=stanza.file_path, options={})
         )
+    print(f"DEBUG: Returning {len(out)} zones")
     return sorted(out, key=lambda z: z.name)
 
 
@@ -48,7 +52,33 @@ def get_zone(zone_name: str):
     if not stanza:
         raise HTTPException(404, "Zone not found")
 
-    # Read zone file to get SOA and TTL
+    # Determine zone type
+    zone_type = (
+        "reverse"
+        if (".in-addr.arpa" in zone_name or ".ip6.arpa" in zone_name)
+        else "forward"
+    )
+    
+    # Check if this is a secondary zone
+    is_secondary = "type slave" in stanza.raw or "type secondary" in stanza.raw
+    zone_role = "secondary" if is_secondary else "primary"
+    
+    # For secondary zones, we can't read the binary zone file
+    # Return with None for SOA and a default TTL
+    if is_secondary:
+        return ZoneDetail(
+            name=zone_name + ".",
+            type=zone_type,
+            role=zone_role,
+            file_path=stanza.file_path,
+            options={},
+            default_ttl=300,
+            soa=None,  # Can't read SOA from binary zone file
+            allow_transfer=stanza.allow_transfer,
+            also_notify=stanza.also_notify,
+        )
+
+    # Read zone file to get SOA and TTL for primary zones
     try:
         with open(stanza.file_path, "r") as f:
             zone_text = f.read()
@@ -61,16 +91,10 @@ def get_zone(zone_name: str):
 
     default_ttl = parse_default_ttl(zone_text)
 
-    # Determine zone type
-    zone_type = (
-        "reverse"
-        if (".in-addr.arpa" in zone_name or ".ip6.arpa" in zone_name)
-        else "forward"
-    )
-
     return ZoneDetail(
         name=zone_name + ".",
         type=zone_type,
+        role=zone_role,
         file_path=stanza.file_path,
         options={},
         default_ttl=default_ttl,
@@ -84,15 +108,22 @@ def get_zone(zone_name: str):
 def create_zone(payload: ZoneCreate):
     zone_name = payload.name  # already normalized in model
     zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}")
-    # Create an empty zone file (with minimal SOA/NS)
-    write_zone_file(
-        zone_name,
-        zone_file,
-        recordsets=[],
-        default_ttl=payload.default_ttl,
-        primary_ns=payload.primary_ns,
-        nameservers=payload.nameservers,
-    )
+    
+    if payload.role == "secondary":
+        # For secondary zones, use a different file path convention
+        zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}.secondary")
+    else:
+        # Create an empty zone file (with minimal SOA/NS) for primary zones
+        if not payload.primary_ns:
+            raise HTTPException(status_code=400, detail="primary_ns is required for primary zones")
+        write_zone_file(
+            zone_name,
+            zone_file,
+            recordsets=[],
+            default_ttl=payload.default_ttl,
+            primary_ns=payload.primary_ns,
+            nameservers=payload.nameservers,
+        )
 
     # Add/replace stanza in managed include
     upsert_zone_stanza(
@@ -100,14 +131,17 @@ def create_zone(payload: ZoneCreate):
         file_path=zone_file,
         allow_transfer=payload.allow_transfer,
         also_notify=payload.also_notify,
+        zone_role=payload.role,
     )
 
-    # Validate config + zone, then reconfig to pick up the new stanza
+    # Validate config, then reconfig to pick up the new stanza
     validate_named_conf()
-    validate_zone(zone_name.rstrip("."), zone_file)
+    if payload.role == "primary":
+        # Only validate zone file for primary zones
+        validate_zone(zone_name.rstrip("."), zone_file)
     rndc_reconfig()
 
-    return Zone(name=zone_name, type=payload.type, file_path=zone_file, options={})
+    return Zone(name=zone_name, type=payload.type, role=payload.role, file_path=zone_file, options={})
 
 
 @router.put("/{zone_name}", response_model=ZoneDetail)

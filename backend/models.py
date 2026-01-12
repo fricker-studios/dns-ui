@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 ZoneType = Literal["forward", "reverse"]
+ZoneRole = Literal["primary", "secondary"]
 RecordType = Literal["A", "AAAA", "CNAME", "MX", "TXT", "SRV", "NS", "PTR", "CAA"]
 
 
@@ -18,6 +19,7 @@ def normalize_fqdn(s: str) -> str:
 class Zone(BaseModel):
     name: str  # example.com.
     type: ZoneType = "forward"  # forward or reverse
+    role: ZoneRole = "primary"  # primary or secondary
     file_path: str
     options: dict = Field(default_factory=dict)  # allow-transfer, also-notify, etc.
 
@@ -55,14 +57,15 @@ class NameServer(BaseModel):
 class ZoneCreate(BaseModel):
     name: str
     type: ZoneType = "forward"
+    role: ZoneRole = "primary"  # primary or secondary
     default_ttl: int = 300
 
     # zone-level config in stanza
     allow_transfer: list[str] = Field(default_factory=list)
     also_notify: list[str] = Field(default_factory=list)
 
-    # SOA
-    primary_ns: str
+    # SOA (only used for master zones)
+    primary_ns: str = ""
     nameservers: list[NameServer] = Field(default_factory=list)
 
     @field_validator("name")
@@ -86,10 +89,11 @@ class ZoneDetail(BaseModel):
 
     name: str
     type: ZoneType
+    role: ZoneRole = "primary"
     file_path: str
     options: dict
     default_ttl: int
-    soa: SOA
+    soa: SOA | None = None  # None for secondary zones
     allow_transfer: list[str]
     also_notify: list[str]
 

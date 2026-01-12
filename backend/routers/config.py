@@ -25,6 +25,9 @@ class BindConfig(BaseModel):
     dnssec_validation: str | None = None
     allow_transfer: list[str] = []
     acls: dict[str, list[str]] = {}
+    server_role: str | None = "primary"
+    primary_servers: list[str] = []
+    transfer_source: str | None = None
 
 
 @router.get("", response_model=BindConfig)

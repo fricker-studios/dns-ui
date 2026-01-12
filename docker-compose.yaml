@@ -8,6 +8,7 @@ services:
     # network_mode: host
     ports:
       - "8080:8080"
+      - "8000:8000"
       - "5353:53"
     stdin_open: true
     tty: true

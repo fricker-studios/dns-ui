@@ -20,6 +20,7 @@ export function apiZoneToZone(apiZone: ApiZone): Zone {
     id: uid(),
     name: apiZone.name,
     type: apiZone.type,
+    role: apiZone.role || "primary",
     comment: undefined,
     tags: [],
     createdAt: nowIso(),

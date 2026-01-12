@@ -22,12 +22,22 @@ def _resolve(zone_name: str):
     stanza = zones.get(zn)
     if not stanza:
         raise HTTPException(404, "Zone not found (managed)")
-    return zn + ".", stanza.file_path
+    
+    # Check if this is a secondary zone
+    is_secondary = "type slave" in stanza.raw or "type secondary" in stanza.raw
+    
+    return zn + ".", stanza.file_path, is_secondary
 
 
 @router.get("", response_model=list[RecordSet])
 def list_recordsets(zone_name: str):
-    zone_fqdn, zone_file = _resolve(zone_name)
+    zone_fqdn, zone_file, is_secondary = _resolve(zone_name)
+    
+    # For secondary zones, return empty list with a note
+    # (we can't edit secondary zones, and the file is in binary format)
+    if is_secondary:
+        return []
+    
     return read_zone_file(zone_fqdn, zone_file)
 
 
@@ -37,7 +47,11 @@ def replace_recordsets(zone_name: str, recordsets: list[RecordSet]):
     Replace ALL recordsets for a zone (rewrite file).
     This maps cleanly to file-backed zones.
     """
-    zone_fqdn, zone_file = _resolve(zone_name)
+    zone_fqdn, zone_file, is_secondary = _resolve(zone_name)
+    
+    # Cannot edit secondary zones
+    if is_secondary:
+        raise HTTPException(400, "Cannot edit recordsets on secondary zones. Edit on the primary server.")
 
     # Normalize: ensure all names are fqdn
     # (Your frontend should send fqdn already; keep it simple here)
