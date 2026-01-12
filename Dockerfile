@@ -24,6 +24,9 @@ RUN apt-get update && apt-get install -y \
     dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user
+RUN useradd -m -u 1000 -s /bin/bash appuser
+
 # Set app working directory
 WORKDIR /app
 RUN touch /etc/bind/managed-zones.conf
@@ -32,6 +35,24 @@ RUN mkdir -p /etc/bind/managed-zones
 # Copy bind9 configuration files
 COPY bind/named.conf.local /etc/bind/named.conf.local
 COPY bind/named.conf.options /etc/bind/named.conf.options
+
+# Set ownership and permissions for bind9 directories
+RUN chown -R appuser:appuser /etc/bind \
+    && chmod -R 755 /etc/bind \
+    && chmod -R 775 /etc/bind/managed-zones \
+    && mkdir -p /var/cache/bind /var/run/named \
+    && chown -R appuser:appuser /var/cache/bind /var/run/named \
+    && chmod -R 775 /var/cache/bind /var/run/named
+
+# Set ownership and permissions for nginx directories
+RUN chown -R appuser:appuser /var/lib/nginx /var/log/nginx \
+    && chmod -R 775 /var/lib/nginx /var/log/nginx \
+    && mkdir -p /usr/share/nginx/html \
+    && chown -R appuser:appuser /usr/share/nginx/html \
+    && sed -i 's/^user .*/user appuser;/' /etc/nginx/nginx.conf
+
+# Set ownership for app directory
+RUN chown -R appuser:appuser /app
 
 # Install python dependencies
 RUN pip install -U pip
@@ -49,9 +70,20 @@ COPY --from=ui-build /ui/dist /usr/share/nginx/html
 
 # nginx config
 COPY nginx/default.conf /etc/nginx/sites-available/default
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Create sites-enabled symlink
+RUN mkdir -p /etc/nginx/sites-enabled \
+    && ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+
+# Ensure all copied files have proper ownership
+RUN chown -R appuser:appuser /app /usr/share/nginx/html /etc/nginx/sites-available/default /etc/nginx/nginx.conf
+
+# Switch to non-root user
+USER appuser
 
 # Expose ports
 EXPOSE 8000 53/udp 53/tcp
 
 ENTRYPOINT [ "/app/entrypoint.sh" ]
-CMD ["uvicorn", "backend.main:app", "--reload", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
