@@ -1,13 +1,11 @@
-// SERVER_ROLE: secondary
-
-masters primary-servers {
-	192.168.50.2;
+acl dns {
+	192.168.50.3;
 };
 
 options {
 	directory "/var/cache/bind";
 	allow-query { any; };
-	allow-transfer { any; };
+	allow-transfer { dns; };
 	forwarders { 8.8.8.8; 8.8.4.4; };
 	recursion yes;
 	listen-on { any; };
