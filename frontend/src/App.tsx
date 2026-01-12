@@ -66,17 +66,20 @@ export default function App() {
         </Tabs.Panel>
         <Tabs.Panel value="delegation" pt="md">
           <Stack gap="md">
-            <Group justify="flex-end">
-              <Button
-                variant="light"
-                leftSection={<IconServer size={16} />}
-                onClick={() => setDelegationOpen(true)}
-              >
-                Delegate subdomain
-              </Button>
-            </Group>
-            {/* Delegation lives in the shell via drawer trigger; keep this simple */}
-            <RecordsPage initialFilter="NS" />
+            {activeZone?.role !== "secondary" && (
+              <Group justify="flex-end">
+                <Button
+                  variant="light"
+                  leftSection={<IconServer size={16} />}
+                  onClick={() => setDelegationOpen(true)}
+                >
+                  Delegate subdomain
+                </Button>
+              </Group>
+            )}
+            {/* For secondary zones, show same status as Records page */}
+            {/* For primary zones, show NS records */}
+            <RecordsPage initialFilter={activeZone?.role === "secondary" ? undefined : "NS"} />
           </Stack>
         </Tabs.Panel>
 
