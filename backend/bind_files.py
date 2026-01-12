@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
 from backend.settings import settings
+from backend.logging import getLogger
+
+logger = getLogger()
 
 
 # More robust regex that handles nested braces
@@ -100,8 +103,8 @@ def read_managed_include() -> str:
 
 
 def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
+    logger.debug("Parsing managed zones from include file")
     zones: Dict[str, ManagedZoneStanza] = {}
-    print(f"DEBUG parse_managed_zones: input text length = {len(text)}")
     
     pos = 0
     zone_count = 0
@@ -120,17 +123,12 @@ def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
         body = stanza['body']
         raw = stanza['raw']
         
-        print(f"DEBUG parse_managed_zones: processing zone '{zone}'")
-        print(f"DEBUG parse_managed_zones: body = {repr(body[:100])}...")
-        
         fmatch = FILE_RE.search(body)
         if not fmatch:
-            print(f"DEBUG parse_managed_zones: no file match for zone '{zone}', skipping")
             pos = stanza['end_pos']
             continue
         
         file_path = fmatch.group("file")
-        print(f"DEBUG parse_managed_zones: file_path = {file_path}")
 
         # Parse allow-transfer and also-notify
         allow_transfer: list[str] = []
@@ -156,10 +154,9 @@ def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
             also_notify=also_notify,
             raw=raw,
         )
-        print(f"DEBUG parse_managed_zones: added zone '{zone}' to results")
         pos = stanza['end_pos']
     
-    print(f"DEBUG parse_managed_zones: found {zone_count} zone stanzas, returning {len(zones)} valid zones")
+    logger.debug(f"Parsed {zone_count} zones from managed include")
     return zones
 
 
@@ -203,6 +200,7 @@ def upsert_zone_stanza(
     also_notify: List[str],
     zone_role: str = "primary",
 ) -> None:
+    logger.debug(f"Upserting zone stanza for {zone_name} (role={zone_role})")
     require_managed_include_ready()
 
     # lock include file while editing
@@ -260,24 +258,36 @@ def run_cmd(args: list[str]) -> Tuple[int, str, str]:
 
 
 def validate_named_conf() -> None:
+    logger.debug("Validating BIND configuration with named-checkconf")
     rc, out, err = run_cmd([settings.named_checkconf, settings.named_conf])
     if rc != 0:
+        logger.error(f"named-checkconf failed: {err.strip() or out.strip()}")
         raise RuntimeError(f"named-checkconf failed: {err.strip() or out.strip()}")
+    logger.debug("BIND configuration validation successful")
 
 
 def validate_zone(zone_name: str, zone_file: str) -> None:
+    logger.debug(f"Validating zone file {zone_file} for zone {zone_name}")
     rc, out, err = run_cmd([settings.named_checkzone, zone_name.rstrip("."), zone_file])
     if rc != 0:
+        logger.error(f"named-checkzone failed for {zone_name}: {err.strip() or out.strip()}")
         raise RuntimeError(f"named-checkzone failed: {err.strip() or out.strip()}")
+    logger.debug(f"Zone file validation successful for {zone_name}")
 
 
 def rndc_reload(zone_name: str) -> None:
+    logger.info(f"Reloading zone {zone_name} via rndc")
     rc, out, err = run_cmd([settings.rndc, "reload", zone_name.rstrip(".")])
     if rc != 0:
+        logger.error(f"rndc reload failed for {zone_name}: {err.strip() or out.strip()}")
         raise RuntimeError(f"rndc reload failed: {err.strip() or out.strip()}")
+    logger.info(f"Zone {zone_name} reloaded successfully")
 
 
 def rndc_reconfig() -> None:
+    logger.info("Executing rndc reconfig")
     rc, out, err = run_cmd([settings.rndc, "reconfig"])
     if rc != 0:
+        logger.error(f"rndc reconfig failed: {err.strip() or out.strip()}")
         raise RuntimeError(f"rndc reconfig failed: {err.strip() or out.strip()}")
+    logger.info("rndc reconfig completed successfully")

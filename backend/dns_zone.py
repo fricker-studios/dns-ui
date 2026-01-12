@@ -11,6 +11,9 @@ import dns.zone
 
 from backend.models import NameServer, RecordSet, RecordValue, normalize_fqdn
 from backend.settings import settings
+from backend.logging import getLogger
+
+logger = getLogger()
 
 
 def _lock_path(path: str):
@@ -25,6 +28,7 @@ def read_zone_file(zone_name: str, zone_file: str) -> list[RecordSet]:
     """
     Parse an on-disk zone into recordsets.
     """
+    logger.debug(f"Reading zone file: {zone_file} for zone {zone_name}")
     origin = dns.name.from_text(zone_name)
     z = dns.zone.from_file(zone_file, origin=origin, relativize=False)
 
@@ -81,6 +85,7 @@ def read_zone_file(zone_name: str, zone_file: str) -> list[RecordSet]:
 
     # sort stable
     recordsets.sort(key=lambda r: (r.name, r.type))
+    logger.debug(f"Read {len(recordsets)} recordsets from zone file {zone_file}")
     return recordsets
 
 
@@ -121,6 +126,9 @@ def write_zone_file(
     Rewrite entire zone file (UI-managed style).
     Keeps a minimal SOA + NS. (You can expand later.)
     """
+    logger.info(f"Writing zone file {zone_file} for zone {zone_name}")
+    logger.debug(f"Zone has {len(recordsets)} recordsets, {len(nameservers)} nameservers")
+    
     serial = serial or int(datetime.now(timezone.utc).strftime("%Y%m%d01"))
     lines: list[str] = []
     lines.append(f"$TTL {default_ttl}")
@@ -234,6 +242,8 @@ def write_zone_recordsets(
     Update only the records in a zone file, leaving SOA and header intact.
     Reads the existing zone, preserves $TTL, SOA, and NS records, then replaces all other records.
     """
+    logger.info(f"Updating recordsets in zone file {zone_file} for zone {zone_name}")
+    logger.debug(f"Writing {len(recordsets)} recordsets")
     # Read the existing zone file
     with open(zone_file, "r") as f:
         original_lines = f.readlines()

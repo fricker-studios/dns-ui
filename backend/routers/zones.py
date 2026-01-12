@@ -4,6 +4,9 @@ import os
 from fastapi import APIRouter, HTTPException
 
 from backend.settings import settings
+from backend.logging import getLogger
+
+logger = getLogger()
 from backend.models import Zone, ZoneCreate, ZoneDetail, SOA, ZoneSettingsUpdate
 from backend.bind_files import (
     read_managed_include,
@@ -22,8 +25,10 @@ router = APIRouter(prefix="/zones", tags=["zones"])
 
 @router.get("", response_model=list[Zone])
 def list_zones():
+    logger.info("Listing all zones")
     text = read_managed_include()
     zones = parse_managed_zones(text)
+    logger.debug(f"Parsed {len(zones)} zones from managed include")
     out: list[Zone] = []
     for zname, stanza in zones.items():
         # Determine zone type based on name
@@ -34,11 +39,9 @@ def list_zones():
         )
         # Determine zone role from stanza
         zone_role = "secondary" if "type slave" in stanza.raw or "type secondary" in stanza.raw else "primary"
-        print(f"DEBUG: Zone {zname} - type: {zone_type}, role: {zone_role}")
         out.append(
             Zone(name=zname, type=zone_type, role=zone_role, file_path=stanza.file_path, options={})
         )
-    print(f"DEBUG: Returning {len(out)} zones")
     return sorted(out, key=lambda z: z.name)
 
 
@@ -106,16 +109,20 @@ def get_zone(zone_name: str):
 
 @router.post("", response_model=Zone)
 def create_zone(payload: ZoneCreate):
+    logger.info(f"Creating zone: {payload.name} (type={payload.type}, role={payload.role})")
     zone_name = payload.name  # already normalized in model
     zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}")
     
     if payload.role == "secondary":
         # For secondary zones, use a different file path convention
         zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}.secondary")
+        logger.debug(f"Creating secondary zone with file: {zone_file}")
     else:
         # Create an empty zone file (with minimal SOA/NS) for primary zones
         if not payload.primary_ns:
+            logger.error(f"primary_ns is required for primary zone {zone_name}")
             raise HTTPException(status_code=400, detail="primary_ns is required for primary zones")
+        logger.debug(f"Writing zone file for primary zone: {zone_file}")
         write_zone_file(
             zone_name,
             zone_file,
@@ -126,6 +133,7 @@ def create_zone(payload: ZoneCreate):
         )
 
     # Add/replace stanza in managed include
+    logger.debug(f"Upserting zone stanza for {zone_name}")
     upsert_zone_stanza(
         zone_name=zone_name.rstrip("."),  # BIND zone name does not require trailing dot
         file_path=zone_file,
@@ -135,12 +143,16 @@ def create_zone(payload: ZoneCreate):
     )
 
     # Validate config, then reconfig to pick up the new stanza
+    logger.debug("Validating BIND configuration")
     validate_named_conf()
     if payload.role == "primary":
         # Only validate zone file for primary zones
+        logger.debug(f"Validating zone file for {zone_name}")
         validate_zone(zone_name.rstrip("."), zone_file)
+    logger.debug("Reconfiguring BIND")
     rndc_reconfig()
 
+    logger.info(f"Successfully created zone: {zone_name}")
     return Zone(name=zone_name, type=payload.type, role=payload.role, file_path=zone_file, options={})
 
 
@@ -213,15 +225,18 @@ def update_zone_settings(zone_name: str, payload: ZoneSettingsUpdate):
 
 @router.delete("/{zone_name}")
 def delete_zone(zone_name: str):
+    logger.info(f"Deleting zone: {zone_name}")
     # accept with or without trailing dot
     zone_name = zone_name.rstrip(".")
     text = read_managed_include()
     zones = parse_managed_zones(text)
     stanza = zones.get(zone_name)
     if not stanza:
+        logger.warning(f"Zone not found for deletion: {zone_name}")
         raise HTTPException(404, "Zone not found (managed)")
 
     # Remove stanza first
+    logger.debug(f"Removing zone stanza for {zone_name}")
     delete_zone_stanza(zone_name)
 
     # Validate + reconfig
