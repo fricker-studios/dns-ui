@@ -126,9 +126,16 @@ export function ZonesSidebar({ onZoneSelect }: { onZoneSelect?: () => void }) {
                 >
                   <Stack gap="xs">
                     <Text fw={700}>{humanizeZoneName(z.name)}</Text>
-                    <Badge variant="light" leftSection={icon}>
-                      {z.type}
-                    </Badge>
+                    <Group gap="xs">
+                      <Badge variant="light" leftSection={icon}>
+                        {z.type}
+                      </Badge>
+                      {z.role === "secondary" && (
+                        <Badge variant="outline" color="blue">
+                          replica
+                        </Badge>
+                      )}
+                    </Group>
                   </Stack>
                   {/* {z.comment ? (
                         <Text size="xs" c="dimmed" mt={6} lineClamp={1}>

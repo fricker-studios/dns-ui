@@ -4,6 +4,9 @@ import os
 from fastapi import APIRouter, HTTPException
 
 from backend.settings import settings
+from backend.logging import getLogger
+
+logger = getLogger()
 from backend.models import Zone, ZoneCreate, ZoneDetail, SOA, ZoneSettingsUpdate
 from backend.bind_files import (
     read_managed_include,
@@ -22,8 +25,10 @@ router = APIRouter(prefix="/zones", tags=["zones"])
 
 @router.get("", response_model=list[Zone])
 def list_zones():
+    logger.info("Listing all zones")
     text = read_managed_include()
     zones = parse_managed_zones(text)
+    logger.debug(f"Parsed {len(zones)} zones from managed include")
     out: list[Zone] = []
     for zname, stanza in zones.items():
         # Determine zone type based on name
@@ -32,8 +37,10 @@ def list_zones():
             if (".in-addr.arpa" in zname or ".ip6.arpa" in zname)
             else "forward"
         )
+        # Determine zone role from stanza
+        zone_role = "secondary" if "type slave" in stanza.raw or "type secondary" in stanza.raw else "primary"
         out.append(
-            Zone(name=zname, type=zone_type, file_path=stanza.file_path, options={})
+            Zone(name=zname, type=zone_type, role=zone_role, file_path=stanza.file_path, options={})
         )
     return sorted(out, key=lambda z: z.name)
 
@@ -48,7 +55,33 @@ def get_zone(zone_name: str):
     if not stanza:
         raise HTTPException(404, "Zone not found")
 
-    # Read zone file to get SOA and TTL
+    # Determine zone type
+    zone_type = (
+        "reverse"
+        if (".in-addr.arpa" in zone_name or ".ip6.arpa" in zone_name)
+        else "forward"
+    )
+    
+    # Check if this is a secondary zone
+    is_secondary = "type slave" in stanza.raw or "type secondary" in stanza.raw
+    zone_role = "secondary" if is_secondary else "primary"
+    
+    # For secondary zones, we can't read the binary zone file
+    # Return with None for SOA and a default TTL
+    if is_secondary:
+        return ZoneDetail(
+            name=zone_name + ".",
+            type=zone_type,
+            role=zone_role,
+            file_path=stanza.file_path,
+            options={},
+            default_ttl=300,
+            soa=None,  # Can't read SOA from binary zone file
+            allow_transfer=stanza.allow_transfer,
+            also_notify=stanza.also_notify,
+        )
+
+    # Read zone file to get SOA and TTL for primary zones
     try:
         with open(stanza.file_path, "r") as f:
             zone_text = f.read()
@@ -61,16 +94,10 @@ def get_zone(zone_name: str):
 
     default_ttl = parse_default_ttl(zone_text)
 
-    # Determine zone type
-    zone_type = (
-        "reverse"
-        if (".in-addr.arpa" in zone_name or ".ip6.arpa" in zone_name)
-        else "forward"
-    )
-
     return ZoneDetail(
         name=zone_name + ".",
         type=zone_type,
+        role=zone_role,
         file_path=stanza.file_path,
         options={},
         default_ttl=default_ttl,
@@ -82,32 +109,51 @@ def get_zone(zone_name: str):
 
 @router.post("", response_model=Zone)
 def create_zone(payload: ZoneCreate):
+    logger.info(f"Creating zone: {payload.name} (type={payload.type}, role={payload.role})")
     zone_name = payload.name  # already normalized in model
     zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}")
-    # Create an empty zone file (with minimal SOA/NS)
-    write_zone_file(
-        zone_name,
-        zone_file,
-        recordsets=[],
-        default_ttl=payload.default_ttl,
-        primary_ns=payload.primary_ns,
-        nameservers=payload.nameservers,
-    )
+    
+    if payload.role == "secondary":
+        # For secondary zones, use a different file path convention
+        zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}.secondary")
+        logger.debug(f"Creating secondary zone with file: {zone_file}")
+    else:
+        # Create an empty zone file (with minimal SOA/NS) for primary zones
+        if not payload.primary_ns:
+            logger.error(f"primary_ns is required for primary zone {zone_name}")
+            raise HTTPException(status_code=400, detail="primary_ns is required for primary zones")
+        logger.debug(f"Writing zone file for primary zone: {zone_file}")
+        write_zone_file(
+            zone_name,
+            zone_file,
+            recordsets=[],
+            default_ttl=payload.default_ttl,
+            primary_ns=payload.primary_ns,
+            nameservers=payload.nameservers,
+        )
 
     # Add/replace stanza in managed include
+    logger.debug(f"Upserting zone stanza for {zone_name}")
     upsert_zone_stanza(
         zone_name=zone_name.rstrip("."),  # BIND zone name does not require trailing dot
         file_path=zone_file,
         allow_transfer=payload.allow_transfer,
         also_notify=payload.also_notify,
+        zone_role=payload.role,
     )
 
-    # Validate config + zone, then reconfig to pick up the new stanza
+    # Validate config, then reconfig to pick up the new stanza
+    logger.debug("Validating BIND configuration")
     validate_named_conf()
-    validate_zone(zone_name.rstrip("."), zone_file)
+    if payload.role == "primary":
+        # Only validate zone file for primary zones
+        logger.debug(f"Validating zone file for {zone_name}")
+        validate_zone(zone_name.rstrip("."), zone_file)
+    logger.debug("Reconfiguring BIND")
     rndc_reconfig()
 
-    return Zone(name=zone_name, type=payload.type, file_path=zone_file, options={})
+    logger.info(f"Successfully created zone: {zone_name}")
+    return Zone(name=zone_name, type=payload.type, role=payload.role, file_path=zone_file, options={})
 
 
 @router.put("/{zone_name}", response_model=ZoneDetail)
@@ -179,15 +225,18 @@ def update_zone_settings(zone_name: str, payload: ZoneSettingsUpdate):
 
 @router.delete("/{zone_name}")
 def delete_zone(zone_name: str):
+    logger.info(f"Deleting zone: {zone_name}")
     # accept with or without trailing dot
     zone_name = zone_name.rstrip(".")
     text = read_managed_include()
     zones = parse_managed_zones(text)
     stanza = zones.get(zone_name)
     if not stanza:
+        logger.warning(f"Zone not found for deletion: {zone_name}")
         raise HTTPException(404, "Zone not found (managed)")
 
     # Remove stanza first
+    logger.debug(f"Removing zone stanza for {zone_name}")
     delete_zone_stanza(zone_name)
 
     # Validate + reconfig

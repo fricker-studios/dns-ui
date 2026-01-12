@@ -1,11 +1,9 @@
-acl dns {
-	192.168.50.3;
-};
+// SERVER_ROLE: primary
 
 options {
 	directory "/var/cache/bind";
 	allow-query { any; };
-	allow-transfer { dns; };
+	allow-transfer { none; };
 	forwarders { 8.8.8.8; 8.8.4.4; };
 	recursion yes;
 	listen-on { any; };

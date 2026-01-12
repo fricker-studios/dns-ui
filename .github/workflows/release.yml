@@ -25,4 +25,6 @@ jobs:
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
           docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+          docker build -t $IMAGE_NAME:latest -f Dockerfile .
           docker push $IMAGE_NAME:$IMAGE_TAG
+          docker push $IMAGE_NAME:latest

@@ -111,6 +111,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 <Button
                   leftSection={<IconPlus size={16} />}
                   onClick={() => setRecordModalOpen(true)}
+                  disabled={activeZone?.role === "secondary"}
                 >
                   Create record
                 </Button>
@@ -164,6 +165,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             radius="xl"
             leftSection={<IconPlus size={20} />}
             onClick={() => setRecordModalOpen(true)}
+            disabled={activeZone?.role === "secondary"}
           >
             Record
           </Button>

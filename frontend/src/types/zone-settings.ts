@@ -13,10 +13,11 @@ export interface SOA {
 export interface ZoneDetail {
   name: string;
   type: ZoneType;
+  role?: "primary" | "secondary";
   file_path: string;
   options: Record<string, unknown>;
   default_ttl: number;
-  soa: SOA;
+  soa: SOA | null;
   allow_transfer: string[];
   also_notify: string[];
 }

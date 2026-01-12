@@ -7,6 +7,7 @@ import type { RecordType, ZoneType } from "../types/dns";
 export interface ApiZone {
   name: string; // FQDN with trailing dot
   type: ZoneType;
+  role?: "primary" | "secondary";
   file_path: string;
   options: Record<string, any>;
 }
@@ -19,10 +20,11 @@ export interface ApiNameServer {
 export interface ApiZoneCreate {
   name: string;
   type?: ZoneType;
+  role?: "primary" | "secondary";
   default_ttl?: number;
   allow_transfer?: string[];
   also_notify?: string[];
-  primary_ns: string;
+  primary_ns?: string;
   nameservers?: ApiNameServer[];
 }
 

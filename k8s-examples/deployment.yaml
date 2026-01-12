@@ -1,0 +1,85 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  name: dns1
+  namespace: dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns1
+  template:
+    metadata:
+      labels:
+        app: dns1
+    spec:
+      initContainers:
+        - name: copy-config
+          image: 'alexfricker/dns-ui:latest'
+          command:
+            - sh
+            - -c
+            - |
+              if [ ! -f /etc/bind/managed-zones.conf ]; then
+                cp /tmp/config-source/managed-zones.conf /etc/bind/managed-zones.conf
+                echo "Copied managed-zones.conf"
+              else
+                echo "managed-zones.conf already exists, skipping"
+              fi
+              if [ ! -f /etc/bind/named.conf.options ]; then
+                cp /tmp/config-source/named.conf.options /etc/bind/named.conf.options
+                echo "Copied named.conf.options"
+              else
+                echo "named.conf.options already exists, skipping"
+              fi
+              echo "Config initialization complete"
+          volumeMounts:
+            - name: config-source
+              mountPath: /tmp/config-source
+            - name: editable-config
+              mountPath: /etc/bind
+      containers:
+        - name: container
+          image: 'alexfricker/dns-ui:latest'
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+            - containerPort: 53
+              protocol: TCP
+            - containerPort: 53
+              protocol: UDP
+          resources: {}
+          terminationMessagePath: /dev/termination-log
+          terminationMessagePolicy: File
+          imagePullPolicy: Always
+          volumeMounts:
+            - name: zones
+              mountPath: /etc/bind/managed-zones
+            - name: editable-config
+              mountPath: /etc/bind/managed-zones.conf
+              subPath: managed-zones.conf
+            - name: editable-config
+              mountPath: /etc/bind/named.conf.options
+              subPath: named.conf.options
+            - name: config-source
+              mountPath: /etc/bind/rndc.key
+              subPath: rndc.key
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      dnsPolicy: ClusterFirst
+      securityContext: {}
+      schedulerName: default-scheduler
+      volumes:
+        - name: zones
+          persistentVolumeClaim:
+            claimName: dns1-zones
+        - name: config-source
+          configMap:
+            name: dns1-config
+        - name: editable-config
+          persistentVolumeClaim:
+            claimName: dns1-config
+  strategy:
+    type: Recreate
+  revisionHistoryLimit: 10
+  progressDeadlineSeconds: 600
