@@ -1,4 +1,8 @@
-// SERVER_ROLE: primary
+// SERVER_ROLE: secondary
+
+masters primary-servers {
+	192.168.50.2;
+};
 
 options {
 	directory "/var/cache/bind";
