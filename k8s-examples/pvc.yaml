@@ -1,0 +1,25 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: dns1-zones
+  namespace: dns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  volumeMode: Filesystem
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: dns1-config
+  namespace: dns
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Mi
+  volumeMode: Filesystem
