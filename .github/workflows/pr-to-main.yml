@@ -11,9 +11,9 @@ env:
   IMAGE_NAME: ${{ secrets.INTERNAL_REGISTRY_URL }}/dns-ui
 
 jobs:
-  build-image:
-    runs-on: self-hosted
-    name: Build Image
+  build-image-x64:
+    runs-on: [self-hosted, X64]
+    name: Build Image (x64)
     
     steps:
       - name: Checkout code
@@ -21,8 +21,41 @@ jobs:
 
       - name: Build and push image
         env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}-x64
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+          docker build --platform linux/amd64 --provenance=false -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
           docker push $IMAGE_NAME:$IMAGE_TAG
+
+  build-image-arm:
+    runs-on: [self-hosted, ARM64]
+    name: Build Image (arm64)
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build and push image
+        env:
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}-arm64
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        run: |
+          docker build --platform linux/arm64 --provenance=false -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+          docker push $IMAGE_NAME:$IMAGE_TAG
+
+  create-multiarch-manifest:
+    runs-on: [self-hosted, X64]
+    name: Create Multi-Arch Manifest
+    needs: [build-image-x64, build-image-arm]
+    
+    steps:
+      - name: Create and push manifest
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          IMAGE_TAG: ${{ env.IMAGE_TAG }}
+        run: |
+          docker manifest rm $IMAGE_NAME:$IMAGE_TAG || true
+          docker manifest create $IMAGE_NAME:$IMAGE_TAG \
+            $IMAGE_NAME:$IMAGE_TAG-x64 \
+            $IMAGE_NAME:$IMAGE_TAG-arm64
+          docker manifest push $IMAGE_NAME:$IMAGE_TAG
