@@ -24,7 +24,7 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}-x64
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+          docker build --platform linux/amd64 -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
           docker push $IMAGE_NAME:$IMAGE_TAG
 
   build-image-arm:
@@ -40,7 +40,7 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_TAG }}-arm64
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          docker build -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
+          docker build --platform linux/arm64 -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
           docker push $IMAGE_NAME:$IMAGE_TAG
 
   create-multiarch-manifest:
