@@ -21,6 +21,11 @@ spec:
   selector:
     app: dns1
   ports:
-    - protocol: TCP
+    - name: 53-tcp
+      protocol: TCP
+      port: 53
+      targetPort: 53
+    - name: 53-udp
+      protocol: UDP
       port: 53
       targetPort: 53

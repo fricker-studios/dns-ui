@@ -20,14 +20,14 @@ spec:
             - sh
             - -c
             - |
-              if [ ! -f /etc/bind/managed-zones.conf ]; then
-                cp /tmp/config-source/managed-zones.conf /etc/bind/managed-zones.conf
+              if [ ! -f /data/managed-zones.conf ]; then
+                cp /tmp/config-source/managed-zones.conf /data/managed-zones.conf
                 echo "Copied managed-zones.conf"
               else
                 echo "managed-zones.conf already exists, skipping"
               fi
-              if [ ! -f /etc/bind/named.conf.options ]; then
-                cp /tmp/config-source/named.conf.options /etc/bind/named.conf.options
+              if [ ! -f /data/named.conf.options ]; then
+                cp /tmp/config-source/named.conf.options /data/named.conf.options
                 echo "Copied named.conf.options"
               else
                 echo "named.conf.options already exists, skipping"
@@ -37,7 +37,7 @@ spec:
             - name: config-source
               mountPath: /tmp/config-source
             - name: editable-config
-              mountPath: /etc/bind
+              mountPath: /data
       containers:
         - name: container
           image: 'alexfricker/dns-ui:latest'
@@ -67,7 +67,9 @@ spec:
       restartPolicy: Always
       terminationGracePeriodSeconds: 30
       dnsPolicy: ClusterFirst
-      securityContext: {}
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
       schedulerName: default-scheduler
       volumes:
         - name: zones
