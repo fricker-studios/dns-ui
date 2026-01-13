@@ -16,3 +16,10 @@ The default application provides an unauthenticated UI on port 8080 (http://loca
 
 3. Start services:
   - `sudo docker compose up -d`
+
+## Managing Zones & Recordsets
+To get started, access the UI (http://localhost:8080) and create a new hosted zone. By default the server is configured as a primary, if you want this to be a replica/secondary node you can adjust the server level settings.
+
+After creating a hosted zone, select the zone and choose "Create record" to create a new recordset. Choose the appropriate option (A/AAAA/CNAME/etc) and fill out the details. To actually apply the changes to the DNS server click on "Apply Changes" (otherwise changes will be lost after leaving the page).
+
+<img width="1512" height="756" alt="image" src="https://github.com/user-attachments/assets/92c67f59-e205-402b-a010-688c5f53cbc0" />
