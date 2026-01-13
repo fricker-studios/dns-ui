@@ -2,7 +2,7 @@
 set -e
 
 # Start bind9 (named) service in background with -g flag as appuser
-/usr/sbin/named -u appuser -c /etc/bind/named.conf -g &
+/usr/sbin/named -c /etc/bind/named.conf -g &
 
 # Start nginx in the background
 nginx
