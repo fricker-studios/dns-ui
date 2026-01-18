@@ -5,8 +5,11 @@ import {
   Code,
   Group,
   ScrollArea,
+  Select,
+  Stack,
   Table,
   Text,
+  Pagination,
 } from "@mantine/core";
 import { IconEdit, IconTrash } from "@tabler/icons-react";
 import type { RecordSet } from "../../types/dns";
@@ -22,14 +25,32 @@ function formatDate(iso: string) {
   }
 }
 
-export function RecordSetTable({ recordSets }: { recordSets: RecordSet[] }) {
+interface RecordSetTableProps {
+  recordSets: RecordSet[];
+  totalRecords: number;
+  currentPage: number;
+  pageSize: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  onPageSizeChange: (pageSize: number) => void;
+}
+
+export function RecordSetTable({
+  recordSets,
+  totalRecords,
+  currentPage,
+  pageSize,
+  totalPages,
+  onPageChange,
+  onPageSizeChange,
+}: RecordSetTableProps) {
   const { activeZone, deleteRecordSet } = useDnsStore();
   const [edit, setEdit] = useState<RecordSet | null>(null);
 
   if (!activeZone) return null;
 
   return (
-    <>
+    <Stack gap="md">
       <ScrollArea type="hover">
         <Table highlightOnHover verticalSpacing="sm">
           <Table.Thead>
@@ -135,11 +156,43 @@ export function RecordSetTable({ recordSets }: { recordSets: RecordSet[] }) {
         ) : null}
       </ScrollArea>
 
+      <Group justify="space-between" align="center">
+        <Group gap="xs">
+          <Text size="sm" c="dimmed">
+            Page size:
+          </Text>
+          <Select
+            size="xs"
+            w={80}
+            value={String(pageSize)}
+            onChange={(v) => v && onPageSizeChange(Number(v))}
+            data={[
+              { value: "10", label: "10" },
+              { value: "25", label: "25" },
+              { value: "50", label: "50" },
+              { value: "100", label: "100" },
+              { value: "200", label: "200" },
+            ]}
+          />
+          <Text size="sm" c="dimmed">
+            Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalRecords)} of {totalRecords} records
+          </Text>
+        </Group>
+        {totalPages > 1 && (
+          <Pagination
+            value={currentPage}
+            onChange={onPageChange}
+            total={totalPages}
+            size="sm"
+          />
+        )}
+      </Group>
+
       <RecordSetModal
         opened={!!edit}
         onClose={() => setEdit(null)}
         editRecordSet={edit ?? undefined}
       />
-    </>
+    </Stack>
   );
 }

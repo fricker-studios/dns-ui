@@ -7,6 +7,7 @@ services:
     container_name: dns-console
     # network_mode: host
     ports:
+      - "8000:8000"
       - "8080:8080"
       - "5353:53"
     stdin_open: true

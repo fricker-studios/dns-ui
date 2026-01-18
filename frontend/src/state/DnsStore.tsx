@@ -4,6 +4,8 @@ import React, {
   useEffect,
   useMemo,
   useReducer,
+  useCallback,
+  useRef,
 } from "react";
 import type { AuditEvent, ChangeRequest, RecordSet, Zone } from "../types/dns";
 import { nowIso, uid } from "../lib/bind";
@@ -26,13 +28,19 @@ type State = {
   audit: AuditEvent[];
   activeZoneId: string | null;
   activeZoneName: string | null;
+  pagination: {
+    total: number;
+    page: number;
+    pageSize: number;
+    totalPages: number;
+  };
 };
 
 type Action =
   | { type: "zones/set"; zones: Zone[] }
   | { type: "zone/create"; zone: Zone }
   | { type: "zone/setActive"; zoneId: string; zoneName: string }
-  | { type: "recordsets/set"; recordSets: RecordSet[] }
+  | { type: "recordsets/set"; recordSets: RecordSet[]; pagination: State["pagination"] }
   | { type: "record/upsert"; recordSet: RecordSet }
   | { type: "record/delete"; recordSetId: string }
   | { type: "change/add"; change: ChangeRequest }
@@ -40,13 +48,21 @@ type Action =
   | { type: "change/revert"; changeId: string }
   | { type: "change/revertAll"; zoneId: string }
   | { type: "audit/add"; event: AuditEvent }
-  | { type: "zone/update"; zone: Zone };
+  | { type: "zone/update"; zone: Zone }
+  | { type: "pagination/setPage"; page: number }
+  | { type: "pagination/setPageSize"; pageSize: number };
 
 const initialState: State = {
   zones: [],
   recordSets: [],
   changes: [],
   audit: [],
+  pagination: {
+    total: 0,
+    page: 1,
+    pageSize: 50,
+    totalPages: 0,
+  },
   activeZoneId: null,
   activeZoneName: null,
 };
@@ -80,7 +96,11 @@ function reducer(state: State, action: Action): State {
       };
 
     case "recordsets/set":
-      return { ...state, recordSets: action.recordSets };
+      return {
+        ...state,
+        recordSets: action.recordSets,
+        pagination: action.pagination,
+      };
 
     case "record/upsert": {
       const exists = state.recordSets.some((r) => r.id === action.recordSet.id);
@@ -128,6 +148,18 @@ function reducer(state: State, action: Action): State {
     case "audit/add":
       return { ...state, audit: [action.event, ...state.audit] };
 
+    case "pagination/setPage":
+      return {
+        ...state,
+        pagination: { ...state.pagination, page: action.page },
+      };
+
+    case "pagination/setPageSize":
+      return {
+        ...state,
+        pagination: { ...state.pagination, pageSize: action.pageSize, page: 1 },
+      };
+
     default:
       return state;
   }
@@ -146,6 +178,8 @@ type Store = {
   setActiveZone: (zoneId: string, zoneName: string) => void;
   refetchZones: () => void;
   refetchRecordSets: () => void;
+  setPage: (page: number) => void;
+  setPageSize: (pageSize: number) => void;
 
   upsertRecordSet: (rs: RecordSet, summary: string, details: string[]) => void;
   deleteRecordSet: (
@@ -162,6 +196,16 @@ const DnsStoreContext = createContext<Store | null>(null);
 export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
+  console.log('[DnsStore] Render, state:', {
+    activeZoneId: state.activeZoneId,
+    recordSetsCount: state.recordSets.length,
+    pagination: state.pagination,
+  });
+
+  // Store activeZoneId in a ref to avoid dependency issues
+  const activeZoneIdRef = useRef(state.activeZoneId);
+  activeZoneIdRef.current = state.activeZoneId;
+
   // API hooks
   const {
     zones: apiZones,
@@ -170,19 +214,26 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
   } = useZones();
   const {
     recordsets: apiRecordSets,
+    pagination: apiPagination,
     loading: recordsetsLoading,
     refetch: refetchRecordSetsApi,
-  } = useRecordSetsApi(state.activeZoneName);
+  } = useRecordSetsApi(
+    state.activeZoneName,
+    1, // Always fetch first page
+    10000 // High page size to get all records for client-side filtering/pagination
+  );
   const { replaceRecordSets } = useReplaceRecordSets();
 
   // Sync API zones to state
   useEffect(() => {
+    console.log('[DnsStore] zones effect triggered', { apiZonesCount: apiZones?.length });
     if (apiZones && apiZones.length > 0) {
       const zones = apiZones.map(apiZoneToZone);
       dispatch({ type: "zones/set", zones });
 
       // Set first zone as active if none selected
       if (!state.activeZoneId && zones.length > 0) {
+        console.log('[DnsStore] Setting first zone as active:', zones[0].id);
         dispatch({
           type: "zone/setActive",
           zoneId: zones[0].id,
@@ -193,14 +244,36 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
   }, [apiZones]);
 
   // Sync API recordsets to state
+  // Extract pagination properties to avoid reference change issues
+  const paginationTotal = apiPagination?.total;
+  const paginationPage = apiPagination?.page;
+  const paginationPageSize = apiPagination?.pageSize;
+  const paginationTotalPages = apiPagination?.totalPages;
+
   useEffect(() => {
-    if (state.activeZoneId && apiRecordSets && apiRecordSets.length >= 0) {
+    console.log('[DnsStore] recordsets effect triggered', {
+      apiRecordSetsCount: apiRecordSets?.length,
+      paginationTotal,
+      activeZoneId: activeZoneIdRef.current,
+    });
+    const activeZoneId = activeZoneIdRef.current;
+    if (activeZoneId && apiRecordSets && apiRecordSets.length >= 0) {
       const recordsets = apiRecordSets.map((rs) =>
-        apiRecordSetToRecordSet(rs, state.activeZoneId!),
+        apiRecordSetToRecordSet(rs, activeZoneId),
       );
-      dispatch({ type: "recordsets/set", recordSets: recordsets });
+      console.log('[DnsStore] Dispatching recordsets/set', { count: recordsets.length });
+      dispatch({
+        type: "recordsets/set",
+        recordSets: recordsets,
+        pagination: {
+          total: paginationTotal ?? recordsets.length,
+          page: paginationPage ?? 1,
+          pageSize: paginationPageSize ?? 50,
+          totalPages: paginationTotalPages ?? Math.ceil(recordsets.length / 50),
+        },
+      });
     }
-  }, [apiRecordSets, state.activeZoneId]);
+  }, [apiRecordSets, paginationTotal, paginationPage, paginationPageSize, paginationTotalPages]);
 
   const activeZone = useMemo(() => {
     const z = state.zones.find((x) => x.id === state.activeZoneId);
@@ -214,6 +287,17 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
         : [],
     [state.recordSets, activeZone],
   );
+
+  // Stable callback references to prevent infinite loops
+  const setPage = useCallback((page: number) => {
+    console.log('[DnsStore] setPage called:', page);
+    dispatch({ type: "pagination/setPage", page });
+  }, []);
+
+  const setPageSize = useCallback((pageSize: number) => {
+    console.log('[DnsStore] setPageSize called:', pageSize);
+    dispatch({ type: "pagination/setPageSize", pageSize });
+  }, []);
 
   const api: Store = useMemo(() => {
     const log = (zoneId: string, action: string, detail: string) => {
@@ -264,6 +348,9 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
 
       refetchZones: refetchZonesApi,
       refetchRecordSets: refetchRecordSetsApi,
+
+      setPage,
+      setPageSize,
 
       upsertRecordSet: (rs, summary, details) => {
         dispatch({ type: "record/upsert", recordSet: rs });
@@ -363,7 +450,7 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
             
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, activeZone, zoneRecordSets, zonesLoading, recordsetsLoading]);
+  }, [state, activeZone, zoneRecordSets, zonesLoading, recordsetsLoading, setPage, setPageSize]);
 
   return (
     <DnsStoreContext.Provider value={api}>{children}</DnsStoreContext.Provider>

@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from backend.logging import getLogger
-from backend.models import RecordSet
+from backend.models import RecordSet, PaginatedRecordSets
 
 logger = getLogger()
 from backend.bind_files import (
@@ -35,20 +35,50 @@ def _resolve(zone_name: str):
     return zn + ".", stanza.file_path, is_secondary
 
 
-@router.get("", response_model=list[RecordSet])
-def list_recordsets(zone_name: str):
-    logger.info(f"Listing recordsets for zone: {zone_name}")
+@router.get("", response_model=PaginatedRecordSets)
+def list_recordsets(
+    zone_name: str,
+    page: int = 1,
+    page_size: int = 50,
+):
+    logger.info(f"Listing recordsets for zone: {zone_name} (page={page}, page_size={page_size})")
     zone_fqdn, zone_file, is_secondary = _resolve(zone_name)
     
-    # For secondary zones, return empty list with a note
+    # For secondary zones, return empty paginated response
     # (we can't edit secondary zones, and the file is in binary format)
     if is_secondary:
         logger.info(f"Zone {zone_name} is secondary, returning empty recordsets")
-        return []
+        return PaginatedRecordSets(
+            items=[],
+            total=0,
+            page=page,
+            page_size=page_size,
+            total_pages=0,
+        )
     
-    recordsets = read_zone_file(zone_fqdn, zone_file)
-    logger.debug(f"Found {len(recordsets)} recordsets in zone {zone_name}")
-    return recordsets
+    # Get all recordsets
+    all_recordsets = read_zone_file(zone_fqdn, zone_file)
+    total = len(all_recordsets)
+    
+    # Calculate pagination
+    start_idx = (page - 1) * page_size
+    end_idx = start_idx + page_size
+    paginated_recordsets = all_recordsets[start_idx:end_idx]
+    
+    total_pages = (total + page_size - 1) // page_size if page_size > 0 else 0
+    
+    logger.debug(
+        f"Returning {len(paginated_recordsets)} of {total} recordsets "
+        f"(page {page}/{total_pages})"
+    )
+    
+    return PaginatedRecordSets(
+        items=paginated_recordsets,
+        total=total,
+        page=page,
+        page_size=page_size,
+        total_pages=total_pages,
+    )
 
 
 @router.put("")

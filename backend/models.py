@@ -118,3 +118,13 @@ class ZoneSettingsUpdate(BaseModel):
     soa_minimum: int | None = None
     allow_transfer: list[str] | None = None
     also_notify: list[str] | None = None
+
+
+class PaginatedRecordSets(BaseModel):
+    """Paginated recordsets response"""
+
+    items: list[RecordSet]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int

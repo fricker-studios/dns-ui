@@ -16,13 +16,23 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
-    nginx \
-    bind9 \
-    bind9utils \
-    bind9-doc \
-    dnsutils \
-    && rm -rf /var/lib/apt/lists/*
+RUN set -eux; \
+    # Prefer HTTPS (avoids flaky/blocked port 80 to CDN edges)
+    if [ -f /etc/apt/sources.list ]; then \
+      sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g' /etc/apt/sources.list; \
+    fi; \
+    if [ -d /etc/apt/sources.list.d ]; then \
+      find /etc/apt/sources.list.d -type f \( -name "*.list" -o -name "*.sources" \) -print0 \
+        | xargs -0 -r sed -i 's|http://deb.debian.org|https://deb.debian.org|g; s|http://security.debian.org|https://security.debian.org|g'; \
+    fi; \
+    apt-get -o Acquire::Retries=5 -o Acquire::https::Timeout=30 -o Acquire::http::Timeout=30 update; \
+    apt-get install -y --no-install-recommends \
+      nginx \
+      bind9 \
+      bind9utils \
+      bind9-doc \
+      dnsutils; \
+    rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN useradd -m -u 1000 -s /bin/bash appuser

@@ -3,24 +3,34 @@
  */
 
 import { useState, useEffect } from "react";
-import { recordsetsApi, type ApiRecordSet, ApiError } from "../api";
+import { recordsetsApi, type ApiRecordSet, type ApiPaginatedRecordSets, ApiError } from "../api";
 
-export function useRecordSets(zoneName: string | null) {
-  const [recordsets, setRecordsets] = useState<ApiRecordSet[] | null>([]);
+export function useRecordSets(
+  zoneName: string | null,
+  page: number = 1,
+  pageSize: number = 50
+) {
+  const [data, setData] = useState<ApiPaginatedRecordSets | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchRecordSets = async () => {
     if (!zoneName) {
-      setRecordsets([]);
+      setData({
+        items: [],
+        total: 0,
+        page: 1,
+        page_size: pageSize,
+        total_pages: 0,
+      });
       return;
     }
 
     try {
       setLoading(true);
       setError(null);
-      const data = await recordsetsApi.list(zoneName);
-      setRecordsets(data);
+      const result = await recordsetsApi.list(zoneName, page, pageSize);
+      setData(result);
     } catch (err) {
       setError(
         err instanceof ApiError ? err.message : "Failed to fetch recordsets",
@@ -34,9 +44,22 @@ export function useRecordSets(zoneName: string | null) {
   useEffect(() => {
     fetchRecordSets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [zoneName]);
+  }, [zoneName, page, pageSize]);
 
-  return { recordsets, loading, error, refetch: fetchRecordSets };
+  return {
+    recordsets: data?.items ?? [],
+    pagination: data
+      ? {
+          total: data.total,
+          page: data.page,
+          pageSize: data.page_size,
+          totalPages: data.total_pages,
+        }
+      : null,
+    loading,
+    error,
+    refetch: fetchRecordSets,
+  };
 }
 
 export function useReplaceRecordSets() {

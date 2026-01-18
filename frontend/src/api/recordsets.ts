@@ -3,15 +3,17 @@
  */
 
 import { api } from "./client";
-import type { ApiRecordSet } from "./types";
+import type { ApiRecordSet, ApiPaginatedRecordSets } from "./types";
 
 export const recordsetsApi = {
   /**
-   * List all recordsets for a zone
+   * List recordsets for a zone with pagination
    */
-  list: (zoneName: string) => {
+  list: (zoneName: string, page: number = 1, pageSize: number = 50) => {
     const encoded = encodeURIComponent(zoneName);
-    return api.get<ApiRecordSet[]>(`/zones/${encoded}/recordsets`);
+    return api.get<ApiPaginatedRecordSets>(
+      `/zones/${encoded}/recordsets?page=${page}&page_size=${pageSize}`
+    );
   },
 
   /**

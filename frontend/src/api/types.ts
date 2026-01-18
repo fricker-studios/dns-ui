@@ -43,6 +43,14 @@ export interface ApiRecordSet {
   comment?: string;
 }
 
+export interface ApiPaginatedRecordSets {
+  items: ApiRecordSet[];
+  total: number;
+  page: number;
+  page_size: number;
+  total_pages: number;
+}
+
 export interface ApiZoneFileExport {
   zone: string;
   text: string;

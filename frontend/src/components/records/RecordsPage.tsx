@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import {
   Alert,
   Badge,
@@ -39,6 +39,20 @@ export function RecordsPage({
   const [query, setQuery] = useState("");
   const [type, setType] = useState<RecordType | "ALL">(initialFilter ?? "ALL");
   const [delegationsOnly, setDelegationsOnly] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+
+  // Track previous filter values
+  const prevFiltersRef = useRef({ query, type, delegationsOnly });
+
+  // Reset to page 1 when filters change (in useEffect to avoid setState during render)
+  useEffect(() => {
+    const prev = prevFiltersRef.current;
+    if (prev.query !== query || prev.type !== type || prev.delegationsOnly !== delegationsOnly) {
+      prevFiltersRef.current = { query, type, delegationsOnly };
+      setCurrentPage(1);
+    }
+  }, [query, type, delegationsOnly]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -54,6 +68,18 @@ export function RecordsPage({
       );
     });
   }, [zoneRecordSets, query, type, delegationsOnly]);
+
+  // Client-side pagination of filtered results
+  const paginatedFiltered = useMemo(() => {
+    // Clamp current page to valid range when filters change
+    const maxPage = Math.ceil(filtered.length / pageSize) || 1;
+    const safePage = Math.min(currentPage, maxPage);
+    const startIdx = (safePage - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    return filtered.slice(startIdx, endIdx);
+  }, [filtered, currentPage, pageSize]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1;
 
   if (!activeZone) {
     return (
@@ -73,7 +99,7 @@ export function RecordsPage({
               <Text fw={800}>Recordsets</Text>
               <Badge variant="outline" color="blue">Secondary Zone</Badge>
             </Group>
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="dimmed" component="span">
               Zone: <Badge variant="light">{activeZone.name}</Badge>
             </Text>
           </Stack>
@@ -121,7 +147,7 @@ export function RecordsPage({
         <Group justify="space-between" align="flex-end">
           <Stack gap={2}>
             <Text fw={800}>Recordsets</Text>
-            <Text size="sm" c="dimmed">
+            <Text size="sm" c="dimmed" component="span">
               Zone: <Badge variant="light">{activeZone.name}</Badge>
             </Text>
           </Stack>
@@ -150,7 +176,15 @@ export function RecordsPage({
           </Group>
         </Group>
 
-        <RecordSetTable recordSets={filtered} />
+        <RecordSetTable
+          recordSets={paginatedFiltered}
+          totalRecords={filtered.length}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
       </Stack>
     </Card>
   );
