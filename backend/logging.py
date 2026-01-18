@@ -11,10 +11,8 @@ RELEVANT_ROOT_DIR = "".join(pathlib.Path(__file__).parts[:2])
 # Configure root logger with stdout handler
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 
 old_factory = logging.getLogRecordFactory()
@@ -44,7 +42,7 @@ logging.setLogRecordFactory(record_factory)
 
 
 class BaseLogger:
-    def __init__(self, logger: Logger, level = logging.INFO):
+    def __init__(self, logger: Logger, level=logging.INFO):
         self.logger = logger
         self.logger.setLevel(level)
 

@@ -32,7 +32,7 @@ export function ZonesSidebar({ onZoneSelect }: { onZoneSelect?: () => void }) {
   const zones = useMemo(() => {
     const q = query.trim().toLowerCase();
     let filtered = state.zones;
-    
+
     if (q) {
       filtered = state.zones.filter(
         (z) =>
@@ -41,7 +41,7 @@ export function ZonesSidebar({ onZoneSelect }: { onZoneSelect?: () => void }) {
           (z.comment ?? "").toLowerCase().includes(q),
       );
     }
-    
+
     // Sort: forward zones first, then reverse zones, alphabetically within each group
     return filtered.sort((a, b) => {
       if (a.type === b.type) {

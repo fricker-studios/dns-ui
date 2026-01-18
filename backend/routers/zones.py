@@ -38,9 +38,19 @@ def list_zones():
             else "forward"
         )
         # Determine zone role from stanza
-        zone_role = "secondary" if "type slave" in stanza.raw or "type secondary" in stanza.raw else "primary"
+        zone_role = (
+            "secondary"
+            if "type slave" in stanza.raw or "type secondary" in stanza.raw
+            else "primary"
+        )
         out.append(
-            Zone(name=zname, type=zone_type, role=zone_role, file_path=stanza.file_path, options={})
+            Zone(
+                name=zname,
+                type=zone_type,
+                role=zone_role,
+                file_path=stanza.file_path,
+                options={},
+            )
         )
     return sorted(out, key=lambda z: z.name)
 
@@ -61,11 +71,11 @@ def get_zone(zone_name: str):
         if (".in-addr.arpa" in zone_name or ".ip6.arpa" in zone_name)
         else "forward"
     )
-    
+
     # Check if this is a secondary zone
     is_secondary = "type slave" in stanza.raw or "type secondary" in stanza.raw
     zone_role = "secondary" if is_secondary else "primary"
-    
+
     # For secondary zones, we can't read the binary zone file
     # Return with None for SOA and a default TTL
     if is_secondary:
@@ -109,19 +119,25 @@ def get_zone(zone_name: str):
 
 @router.post("", response_model=Zone)
 def create_zone(payload: ZoneCreate):
-    logger.info(f"Creating zone: {payload.name} (type={payload.type}, role={payload.role})")
+    logger.info(
+        f"Creating zone: {payload.name} (type={payload.type}, role={payload.role})"
+    )
     zone_name = payload.name  # already normalized in model
     zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}")
-    
+
     if payload.role == "secondary":
         # For secondary zones, use a different file path convention
-        zone_file = os.path.join(settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}.secondary")
+        zone_file = os.path.join(
+            settings.managed_zone_dir, f"db.{zone_name.rstrip('.')}.secondary"
+        )
         logger.debug(f"Creating secondary zone with file: {zone_file}")
     else:
         # Create an empty zone file (with minimal SOA/NS) for primary zones
         if not payload.primary_ns:
             logger.error(f"primary_ns is required for primary zone {zone_name}")
-            raise HTTPException(status_code=400, detail="primary_ns is required for primary zones")
+            raise HTTPException(
+                status_code=400, detail="primary_ns is required for primary zones"
+            )
         logger.debug(f"Writing zone file for primary zone: {zone_file}")
         write_zone_file(
             zone_name,
@@ -153,7 +169,13 @@ def create_zone(payload: ZoneCreate):
     rndc_reconfig()
 
     logger.info(f"Successfully created zone: {zone_name}")
-    return Zone(name=zone_name, type=payload.type, role=payload.role, file_path=zone_file, options={})
+    return Zone(
+        name=zone_name,
+        type=payload.type,
+        role=payload.role,
+        file_path=zone_file,
+        options={},
+    )
 
 
 @router.put("/{zone_name}", response_model=ZoneDetail)

@@ -3,12 +3,17 @@
  */
 
 import { useState, useEffect } from "react";
-import { recordsetsApi, type ApiRecordSet, type ApiPaginatedRecordSets, ApiError } from "../api";
+import {
+  recordsetsApi,
+  type ApiRecordSet,
+  type ApiPaginatedRecordSets,
+  ApiError,
+} from "../api";
 
 export function useRecordSets(
   zoneName: string | null,
   page: number = 1,
-  pageSize: number = 50
+  pageSize: number = 50,
 ) {
   const [data, setData] = useState<ApiPaginatedRecordSets | null>(null);
   const [loading, setLoading] = useState(false);
@@ -87,4 +92,31 @@ export function useReplaceRecordSets() {
   };
 
   return { replaceRecordSets, loading, error };
+}
+
+export function useBatchUpsertRecordSets() {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const batchUpsertRecordSets = async (
+    zoneName: string,
+    recordsets: ApiRecordSet[],
+  ): Promise<boolean> => {
+    try {
+      setLoading(true);
+      setError(null);
+      await recordsetsApi.batchUpsert(zoneName, recordsets);
+      return true;
+    } catch (err) {
+      const message =
+        err instanceof ApiError ? err.message : "Failed to add recordsets";
+      setError(message);
+      console.error("Error adding recordsets:", err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return { batchUpsertRecordSets, loading, error };
 }

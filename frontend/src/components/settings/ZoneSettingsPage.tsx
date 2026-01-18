@@ -69,11 +69,21 @@ export function ZoneSettingsPage() {
       default_ttl:
         defaultTtl !== zoneDetails.default_ttl ? defaultTtl : undefined,
       soa_refresh:
-        zoneDetails.soa && soaRefresh !== zoneDetails.soa.refresh ? soaRefresh : undefined,
-      soa_retry: zoneDetails.soa && soaRetry !== zoneDetails.soa.retry ? soaRetry : undefined,
-      soa_expire: zoneDetails.soa && soaExpire !== zoneDetails.soa.expire ? soaExpire : undefined,
+        zoneDetails.soa && soaRefresh !== zoneDetails.soa.refresh
+          ? soaRefresh
+          : undefined,
+      soa_retry:
+        zoneDetails.soa && soaRetry !== zoneDetails.soa.retry
+          ? soaRetry
+          : undefined,
+      soa_expire:
+        zoneDetails.soa && soaExpire !== zoneDetails.soa.expire
+          ? soaExpire
+          : undefined,
       soa_minimum:
-        zoneDetails.soa && soaMinimum !== zoneDetails.soa.minimum ? soaMinimum : undefined,
+        zoneDetails.soa && soaMinimum !== zoneDetails.soa.minimum
+          ? soaMinimum
+          : undefined,
     };
 
     // Remove undefined values
@@ -164,11 +174,11 @@ export function ZoneSettingsPage() {
     <Stack gap="lg">
       {zoneDetails.role === "secondary" && (
         <Alert color="blue" title="Secondary Zone">
-          This is a secondary zone that replicates from a primary server. 
-          SOA and recordset management is not available for secondary zones.
+          This is a secondary zone that replicates from a primary server. SOA
+          and recordset management is not available for secondary zones.
         </Alert>
       )}
-      
+
       <Paper withBorder p="md" radius="md">
         <Stack gap="md">
           <Group justify="space-between">
@@ -208,80 +218,80 @@ export function ZoneSettingsPage() {
                 behavior.
               </Text>
 
-          <Group grow>
-            <NumberInput
-              label="Refresh (seconds)"
-              description="How often secondary servers check for updates"
-              value={soaRefresh}
-              onChange={(val) => {
-                setSoaRefresh(Number(val));
-                markChanged();
-              }}
-              min={300}
-              max={86400}
-            />
-            <NumberInput
-              label="Retry (seconds)"
-              description="How long secondary waits before retrying after failed refresh"
-              value={soaRetry}
-              onChange={(val) => {
-                setSoaRetry(Number(val));
-                markChanged();
-              }}
-              min={60}
-              max={7200}
-            />
-          </Group>
+              <Group grow>
+                <NumberInput
+                  label="Refresh (seconds)"
+                  description="How often secondary servers check for updates"
+                  value={soaRefresh}
+                  onChange={(val) => {
+                    setSoaRefresh(Number(val));
+                    markChanged();
+                  }}
+                  min={300}
+                  max={86400}
+                />
+                <NumberInput
+                  label="Retry (seconds)"
+                  description="How long secondary waits before retrying after failed refresh"
+                  value={soaRetry}
+                  onChange={(val) => {
+                    setSoaRetry(Number(val));
+                    markChanged();
+                  }}
+                  min={60}
+                  max={7200}
+                />
+              </Group>
 
-          <Group grow>
-            <NumberInput
-              label="Expire (seconds)"
-              description="How long secondary keeps data without successful refresh"
-              value={soaExpire}
-              onChange={(val) => {
-                setSoaExpire(Number(val));
-                markChanged();
-              }}
-              min={86400}
-              max={2419200}
-            />
-            <NumberInput
-              label="Minimum (seconds)"
-              description="Minimum TTL for negative caching"
-              value={soaMinimum}
-              onChange={(val) => {
-                setSoaMinimum(Number(val));
-                markChanged();
-              }}
-              min={60}
-              max={3600}
-            />
-          </Group>
+              <Group grow>
+                <NumberInput
+                  label="Expire (seconds)"
+                  description="How long secondary keeps data without successful refresh"
+                  value={soaExpire}
+                  onChange={(val) => {
+                    setSoaExpire(Number(val));
+                    markChanged();
+                  }}
+                  min={86400}
+                  max={2419200}
+                />
+                <NumberInput
+                  label="Minimum (seconds)"
+                  description="Minimum TTL for negative caching"
+                  value={soaMinimum}
+                  onChange={(val) => {
+                    setSoaMinimum(Number(val));
+                    markChanged();
+                  }}
+                  min={60}
+                  max={3600}
+                />
+              </Group>
 
-          <Divider label="SOA Details (Read-only)" labelPosition="left" />
+              <Divider label="SOA Details (Read-only)" labelPosition="left" />
 
-          <Group grow>
-            <Box>
-              <Text size="sm" fw={500} c="dimmed">
-                Primary Nameserver
-              </Text>
-              <Text size="sm">{zoneDetails.soa.primary_ns}</Text>
-            </Box>
-            <Box>
-              <Text size="sm" fw={500} c="dimmed">
-                Admin Email
-              </Text>
-              <Text size="sm">{zoneDetails.soa.admin_email}</Text>
-            </Box>
-            <Box>
-              <Text size="sm" fw={500} c="dimmed">
-                Serial
-              </Text>
-              <Text size="sm" ff="monospace">
-                {zoneDetails.soa.serial}
-              </Text>
-            </Box>
-          </Group>
+              <Group grow>
+                <Box>
+                  <Text size="sm" fw={500} c="dimmed">
+                    Primary Nameserver
+                  </Text>
+                  <Text size="sm">{zoneDetails.soa.primary_ns}</Text>
+                </Box>
+                <Box>
+                  <Text size="sm" fw={500} c="dimmed">
+                    Admin Email
+                  </Text>
+                  <Text size="sm">{zoneDetails.soa.admin_email}</Text>
+                </Box>
+                <Box>
+                  <Text size="sm" fw={500} c="dimmed">
+                    Serial
+                  </Text>
+                  <Text size="sm" ff="monospace">
+                    {zoneDetails.soa.serial}
+                  </Text>
+                </Box>
+              </Group>
             </>
           )}
         </Stack>

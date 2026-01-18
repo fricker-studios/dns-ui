@@ -22,6 +22,35 @@ export function fqdnJoin(label: string, zoneName: string) {
   return normalizeFqdn(`${l}.${z}`);
 }
 
+/**
+ * Validate if a string is a valid IPv4 address
+ */
+function isValidIPv4(ip: string): boolean {
+  const parts = ip.split(".");
+  if (parts.length !== 4) return false;
+  return parts.every((part) => {
+    const num = parseInt(part, 10);
+    return !isNaN(num) && num >= 0 && num <= 255 && part === num.toString();
+  });
+}
+
+/**
+ * Validate if a string is a valid IPv6 address (basic check)
+ */
+function isValidIPv6(ip: string): boolean {
+  // Basic IPv6 validation
+  if (!ip.includes(":")) return false;
+  const parts = ip.split(":");
+  if (parts.length < 3 || parts.length > 8) return false;
+
+  // Check for valid hex groups
+  for (const part of parts) {
+    if (part.length > 4) return false;
+    if (part && !/^[0-9a-fA-F]+$/.test(part)) return false;
+  }
+  return true;
+}
+
 export function validateRecordInput(args: {
   type: RecordType;
   name: string;
@@ -35,10 +64,21 @@ export function validateRecordInput(args: {
     const raw = String(v.value ?? "").trim();
     if (!raw) errors.push("Record value cannot be empty.");
 
-    if (args.type === "A" && !/^\d{1,3}(\.\d{1,3}){3}$/.test(raw))
-      errors.push(`A expects IPv4: "${raw}"`);
-    if (args.type === "AAAA" && !raw.includes(":"))
-      errors.push(`AAAA expects IPv6: "${raw}"`);
+    // Validate IPv4 addresses
+    if (args.type === "A") {
+      if (!isValidIPv4(raw)) {
+        errors.push(
+          `Invalid IPv4 address: "${raw}". Each octet must be 0-255.`,
+        );
+      }
+    }
+
+    // Validate IPv6 addresses
+    if (args.type === "AAAA") {
+      if (!isValidIPv6(raw)) {
+        errors.push(`Invalid IPv6 address: "${raw}"`);
+      }
+    }
 
     const needsFqdn = ["CNAME", "NS", "PTR", "MX", "SRV"].includes(args.type);
     if (needsFqdn && !raw.endsWith("."))

@@ -79,7 +79,11 @@ export default function App() {
             )}
             {/* For secondary zones, show same status as Records page */}
             {/* For primary zones, show NS records */}
-            <RecordsPage initialFilter={activeZone?.role === "secondary" ? undefined : "NS"} />
+            <RecordsPage
+              initialFilter={
+                activeZone?.role === "secondary" ? undefined : "NS"
+              }
+            />
           </Stack>
         </Tabs.Panel>
 

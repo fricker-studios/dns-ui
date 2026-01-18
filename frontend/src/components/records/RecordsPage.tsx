@@ -3,6 +3,7 @@ import {
   Alert,
   Badge,
   Box,
+  Button,
   Card,
   Checkbox,
   Group,
@@ -13,10 +14,16 @@ import {
   TextInput,
   ThemeIcon,
 } from "@mantine/core";
-import { IconSearch, IconCheck, IconClock } from "@tabler/icons-react";
+import {
+  IconSearch,
+  IconCheck,
+  IconClock,
+  IconPlus,
+} from "@tabler/icons-react";
 import type { RecordType } from "../../types/dns";
 import { useDnsStore } from "../../state/DnsStore";
 import { RecordSetTable } from "./RecordSetTable";
+import { BulkAddRecordsPage } from "./BulkAddRecordsPage";
 
 const types: (RecordType | "ALL")[] = [
   "ALL",
@@ -41,6 +48,7 @@ export function RecordsPage({
   const [delegationsOnly, setDelegationsOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [showBulkAdd, setShowBulkAdd] = useState(false);
 
   // Track previous filter values
   const prevFiltersRef = useRef({ query, type, delegationsOnly });
@@ -48,7 +56,11 @@ export function RecordsPage({
   // Reset to page 1 when filters change (in useEffect to avoid setState during render)
   useEffect(() => {
     const prev = prevFiltersRef.current;
-    if (prev.query !== query || prev.type !== type || prev.delegationsOnly !== delegationsOnly) {
+    if (
+      prev.query !== query ||
+      prev.type !== type ||
+      prev.delegationsOnly !== delegationsOnly
+    ) {
       prevFiltersRef.current = { query, type, delegationsOnly };
       setCurrentPage(1);
     }
@@ -81,6 +93,11 @@ export function RecordsPage({
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
 
+  // If showing bulk add page, render that instead (after all hooks)
+  if (showBulkAdd) {
+    return <BulkAddRecordsPage onClose={() => setShowBulkAdd(false)} />;
+  }
+
   if (!activeZone) {
     return (
       <Card withBorder radius="md" p="lg">
@@ -97,7 +114,9 @@ export function RecordsPage({
           <Stack gap={2}>
             <Group>
               <Text fw={800}>Recordsets</Text>
-              <Badge variant="outline" color="blue">Secondary Zone</Badge>
+              <Badge variant="outline" color="blue">
+                Secondary Zone
+              </Badge>
             </Group>
             <Text size="sm" c="dimmed" component="span">
               Zone: <Badge variant="light">{activeZone.name}</Badge>
@@ -105,8 +124,9 @@ export function RecordsPage({
           </Stack>
 
           <Alert color="blue" title="Read-only replica zone">
-            This is a secondary zone that replicates from your configured primary DNS servers.
-            Records are automatically transferred and cannot be created or modified through this interface.
+            This is a secondary zone that replicates from your configured
+            primary DNS servers. Records are automatically transferred and
+            cannot be created or modified through this interface.
           </Alert>
 
           <Paper withBorder p="md" radius="md">
@@ -122,7 +142,7 @@ export function RecordsPage({
                   </Text>
                 </Box>
               </Group>
-              
+
               <Group>
                 <ThemeIcon color="gray" variant="light" size="lg">
                   <IconClock size={20} />
@@ -144,13 +164,21 @@ export function RecordsPage({
   return (
     <Card withBorder radius="md" p="lg">
       <Stack gap="sm">
-        <Group justify="space-between" align="flex-end">
-          <Stack gap={2}>
-            <Text fw={800}>Recordsets</Text>
-            <Text size="sm" c="dimmed" component="span">
-              Zone: <Badge variant="light">{activeZone.name}</Badge>
-            </Text>
-          </Stack>
+        <Stack gap={2}>
+          <Text fw={800}>Recordsets</Text>
+          <Text size="sm" c="dimmed" component="span">
+            Zone: <Badge variant="light">{activeZone.name}</Badge>
+          </Text>
+        </Stack>
+
+        <Group justify="space-between" align="center">
+          <Button
+            variant="light"
+            leftSection={<IconPlus size={16} />}
+            onClick={() => setShowBulkAdd(true)}
+          >
+            Add records
+          </Button>
 
           <Group>
             <TextInput

@@ -151,29 +151,25 @@ export function RecordSetModal({
       <Stack>
         <Grid>
           <Grid.Col span={{ base: 12 }} m={0} p={0}>
-          <Flex
-            justify="flex-start"
-            align="flex-end"
-            direction="row"
-          >
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <TextInput
-                label="Name (label)"
-                value={label}
-                onChange={(e) => setLabel(e.currentTarget.value)}
-                description={`FQDN: ${fqdn}`}
-                placeholder="@, www, api, _sip._tcp"
-              />
-            </Grid.Col>
-            <Grid.Col span={{ base: 12, md: 6 }}>
-              <Select
-                label="Type"
-                data={recordTypeOptions}
-                value={type}
-                onChange={(v) => setType((v as RecordType) ?? "A")}
-              />
-            </Grid.Col>
-          </Flex>
+            <Flex justify="flex-start" align="flex-end" direction="row">
+              <Grid.Col span={{ base: 12, md: 6 }}>
+                <TextInput
+                  label="Name (label)"
+                  value={label}
+                  onChange={(e) => setLabel(e.currentTarget.value)}
+                  description={`FQDN: ${fqdn}`}
+                  placeholder="@, www, api, _sip._tcp"
+                />
+              </Grid.Col>
+              <Grid.Col span={{ base: 12, md: 6 }}>
+                <Select
+                  label="Type"
+                  data={recordTypeOptions}
+                  value={type}
+                  onChange={(v) => setType((v as RecordType) ?? "A")}
+                />
+              </Grid.Col>
+            </Flex>
           </Grid.Col>
           <Grid.Col span={{ base: 12, md: 4 }}>
             <NumberInput
@@ -223,8 +219,26 @@ export function RecordSetModal({
               />
 
               {type === "MX" ? (
+                <NumberInput
+                  label="Priority"
+                  value={v.priority ?? 10}
+                  onChange={(val) =>
+                    setValues((p) =>
+                      p.map((x) =>
+                        x.id === v.id
+                          ? { ...x, priority: Number(val ?? 10) }
+                          : x,
+                      ),
+                    )
+                  }
+                />
+              ) : null}
+
+              {type === "SRV" ? (
+                <>
                   <NumberInput
                     label="Priority"
+                    w={100}
                     value={v.priority ?? 10}
                     onChange={(val) =>
                       setValues((p) =>
@@ -236,75 +250,59 @@ export function RecordSetModal({
                       )
                     }
                   />
-              ) : null}
-
-              {type === "SRV" ? (
-                <>
-                    <NumberInput
-                      label="Priority"
-                      w={100}
-                      value={v.priority ?? 10}
-                      onChange={(val) =>
-                        setValues((p) =>
-                          p.map((x) =>
-                            x.id === v.id
-                              ? { ...x, priority: Number(val ?? 10) }
-                              : x,
-                          ),
-                        )
-                      }
-                    />
-                    <NumberInput
-                      label="Weight"
-                      w={100}
-                      value={v.weight ?? 5}
-                      onChange={(val) =>
-                        setValues((p) =>
-                          p.map((x) =>
-                            x.id === v.id
-                              ? { ...x, weight: Number(val ?? 5) }
-                              : x,
-                          ),
-                        )
-                      }
-                    />
-                    <NumberInput
-                      label="Port"
-                      w={100}
-                      value={v.port ?? 443}
-                      onChange={(val) =>
-                        setValues((p) =>
-                          p.map((x) =>
-                            x.id === v.id
-                              ? { ...x, port: Number(val ?? 443) }
-                              : x,
-                          ),
-                        )
-                      }
-                      min={0}
-                      max={65535}
-                    />
+                  <NumberInput
+                    label="Weight"
+                    w={100}
+                    value={v.weight ?? 5}
+                    onChange={(val) =>
+                      setValues((p) =>
+                        p.map((x) =>
+                          x.id === v.id
+                            ? { ...x, weight: Number(val ?? 5) }
+                            : x,
+                        ),
+                      )
+                    }
+                  />
+                  <NumberInput
+                    label="Port"
+                    w={100}
+                    value={v.port ?? 443}
+                    onChange={(val) =>
+                      setValues((p) =>
+                        p.map((x) =>
+                          x.id === v.id
+                            ? { ...x, port: Number(val ?? 443) }
+                            : x,
+                        ),
+                      )
+                    }
+                    min={0}
+                    max={65535}
+                  />
                 </>
               ) : null}
 
-              {(type !== "CNAME" && values.length > 1) && (
+              {type !== "CNAME" && values.length > 1 && (
                 <Button
-                    variant="default"
-                    color="red"
-                    onClick={() =>
-                      setValues((p) => p.filter((x) => x.id !== v.id))
-                    }
-                  >
-                    Remove
+                  variant="default"
+                  color="red"
+                  onClick={() =>
+                    setValues((p) => p.filter((x) => x.id !== v.id))
+                  }
+                >
+                  Remove
                 </Button>
-            )}
+              )}
             </Group>
           ))}
           <Group justify="space-between" mt={5}>
             {type !== "CNAME" && (
               <Button
                 variant="light"
-                onClick={() => setValues((p) => [...p, { id: uid(), value: "" }])}
+                onClick={() =>
+                  setValues((p) => [...p, { id: uid(), value: "" }])
+                }
               >
                 Add value
               </Button>

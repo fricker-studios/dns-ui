@@ -51,7 +51,7 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
     () =>
       typeof window !== "undefined" &&
       /Mac|iPhone|iPod|iPad/.test(navigator.platform),
-    []
+    [],
   );
   const modifierKey = isMac ? "⌘" : "Ctrl";
 
@@ -107,15 +107,6 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
             </Group>
 
             <Group gap="xs" wrap="nowrap">
-              {!isMobile && (
-                <Button
-                  leftSection={<IconPlus size={16} />}
-                  onClick={() => setRecordModalOpen(true)}
-                  disabled={activeZone?.role === "secondary"}
-                >
-                  Create record
-                </Button>
-              )}
               <Button
                 variant="light"
                 leftSection={<IconRefresh size={16} />}
@@ -125,7 +116,9 @@ export function ConsoleShell({ children }: { children: React.ReactNode }) {
                 }}
                 size={isMobile ? "compact-sm" : "sm"}
               >
-                {isMobile ? `(${pending})` : `Apply changes ${pending ? `(${pending})` : ""}`}
+                {isMobile
+                  ? `(${pending})`
+                  : `Apply changes ${pending ? `(${pending})` : ""}`}
               </Button>
               {!isMobile && (
                 <Button

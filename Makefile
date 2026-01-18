@@ -29,6 +29,7 @@ build:
 
 runserver: build
 	docker compose up -d $(APP_NAME)
+	npm --prefix=frontend run dev
 
 pretty:
 	black ./backend

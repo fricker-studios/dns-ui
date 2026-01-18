@@ -20,39 +20,32 @@ def parse_zone_stanza(text: str, start_pos: int = 0):
     zone_match = re.match(r'zone\s+"([^"]+)"\s*\{', text[start_pos:])
     if not zone_match:
         return None
-    
+
     zone_name = zone_match.group(1)
     brace_start = start_pos + zone_match.end() - 1  # Position of opening {
-    
+
     # Count braces to find the matching closing brace
     brace_count = 1
     pos = brace_start + 1
     while pos < len(text) and brace_count > 0:
-        if text[pos] == '{':
+        if text[pos] == "{":
             brace_count += 1
-        elif text[pos] == '}':
+        elif text[pos] == "}":
             brace_count -= 1
         pos += 1
-    
+
     if brace_count != 0:
         return None  # Unmatched braces
-    
+
     # Extract the full stanza
-    stanza_end = pos + 1 if pos < len(text) and text[pos] == ';' else pos
+    stanza_end = pos + 1 if pos < len(text) and text[pos] == ";" else pos
     full_stanza = text[start_pos:stanza_end]
-    body = text[brace_start + 1:pos - 1]
-    
-    return {
-        'zone': zone_name,
-        'body': body,
-        'raw': full_stanza,
-        'end_pos': stanza_end
-    }
+    body = text[brace_start + 1 : pos - 1]
+
+    return {"zone": zone_name, "body": body, "raw": full_stanza, "end_pos": stanza_end}
 
 
-ZONE_STANZA_RE = re.compile(
-    r'zone\s+"(?P<zone>[^"]+)"\s*\{', re.MULTILINE
-)
+ZONE_STANZA_RE = re.compile(r'zone\s+"(?P<zone>[^"]+)"\s*\{', re.MULTILINE)
 
 FILE_RE = re.compile(r'file\s+"(?P<file>[^"]+)";')
 TYPE_RE = re.compile(r"type\s+(?P<type>\w+);")
@@ -105,29 +98,29 @@ def read_managed_include() -> str:
 def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
     logger.debug("Parsing managed zones from include file")
     zones: Dict[str, ManagedZoneStanza] = {}
-    
+
     pos = 0
     zone_count = 0
     while pos < len(text):
         stanza = parse_zone_stanza(text, pos)
         if not stanza:
             # Move forward to find next zone keyword
-            next_zone = text.find('zone', pos + 1)
+            next_zone = text.find("zone", pos + 1)
             if next_zone == -1:
                 break
             pos = next_zone
             continue
-        
+
         zone_count += 1
-        zone = stanza['zone']
-        body = stanza['body']
-        raw = stanza['raw']
-        
+        zone = stanza["zone"]
+        body = stanza["body"]
+        raw = stanza["raw"]
+
         fmatch = FILE_RE.search(body)
         if not fmatch:
-            pos = stanza['end_pos']
+            pos = stanza["end_pos"]
             continue
-        
+
         file_path = fmatch.group("file")
 
         # Parse allow-transfer and also-notify
@@ -154,8 +147,8 @@ def parse_managed_zones(text: str) -> Dict[str, ManagedZoneStanza]:
             also_notify=also_notify,
             raw=raw,
         )
-        pos = stanza['end_pos']
-    
+        pos = stanza["end_pos"]
+
     logger.debug(f"Parsed {zone_count} zones from managed include")
     return zones
 
@@ -180,7 +173,9 @@ def build_zone_stanza(
     else:
         # Primary zone stanza
         allow = (
-            f"allow-transfer {{ {'; '.join(allow_transfer)}; }};" if allow_transfer else ""
+            f"allow-transfer {{ {'; '.join(allow_transfer)}; }};"
+            if allow_transfer
+            else ""
         )
         notify = f"also-notify {{ {'; '.join(also_notify)}; }};" if also_notify else ""
         return (
@@ -270,7 +265,9 @@ def validate_zone(zone_name: str, zone_file: str) -> None:
     logger.debug(f"Validating zone file {zone_file} for zone {zone_name}")
     rc, out, err = run_cmd([settings.named_checkzone, zone_name.rstrip("."), zone_file])
     if rc != 0:
-        logger.error(f"named-checkzone failed for {zone_name}: {err.strip() or out.strip()}")
+        logger.error(
+            f"named-checkzone failed for {zone_name}: {err.strip() or out.strip()}"
+        )
         raise RuntimeError(f"named-checkzone failed: {err.strip() or out.strip()}")
     logger.debug(f"Zone file validation successful for {zone_name}")
 
@@ -279,7 +276,9 @@ def rndc_reload(zone_name: str) -> None:
     logger.info(f"Reloading zone {zone_name} via rndc")
     rc, out, err = run_cmd([settings.rndc, "reload", zone_name.rstrip(".")])
     if rc != 0:
-        logger.error(f"rndc reload failed for {zone_name}: {err.strip() or out.strip()}")
+        logger.error(
+            f"rndc reload failed for {zone_name}: {err.strip() or out.strip()}"
+        )
         raise RuntimeError(f"rndc reload failed: {err.strip() or out.strip()}")
     logger.info(f"Zone {zone_name} reloaded successfully")
 

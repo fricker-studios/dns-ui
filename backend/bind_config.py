@@ -118,7 +118,9 @@ def parse_named_options(content: str) -> dict[str, Any]:
     config["allow_transfer"] = parse_list_field(options_content, "allow-transfer")
 
     # Parse server role (custom directive, not standard BIND)
-    server_role_match = re.search(r"//\s*SERVER_ROLE:\s*(primary|secondary|both)", content)
+    server_role_match = re.search(
+        r"//\s*SERVER_ROLE:\s*(primary|secondary|both)", content
+    )
     if server_role_match:
         config["server_role"] = server_role_match.group(1)
     else:
@@ -130,7 +132,9 @@ def parse_named_options(content: str) -> dict[str, Any]:
     if masters_match:
         masters_content = masters_match.group(1)
         # Parse the list of servers
-        servers = [s.strip().rstrip(";") for s in masters_content.split(";") if s.strip()]
+        servers = [
+            s.strip().rstrip(";") for s in masters_content.split(";") if s.strip()
+        ]
         config["primary_servers"] = servers
     else:
         config["primary_servers"] = []

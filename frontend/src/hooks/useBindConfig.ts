@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import { api, ApiError } from "../api/client";
 import type { BindConfig } from "../api/types";
 
-
 export function useBindConfig() {
   const [config, setConfig] = useState<BindConfig | null>(null);
   const [loading, setLoading] = useState(true);

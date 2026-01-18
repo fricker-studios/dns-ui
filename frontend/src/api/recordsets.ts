@@ -12,7 +12,7 @@ export const recordsetsApi = {
   list: (zoneName: string, page: number = 1, pageSize: number = 50) => {
     const encoded = encodeURIComponent(zoneName);
     return api.get<ApiPaginatedRecordSets>(
-      `/zones/${encoded}/recordsets?page=${page}&page_size=${pageSize}`
+      `/zones/${encoded}/recordsets?page=${page}&page_size=${pageSize}`,
     );
   },
 
@@ -23,6 +23,17 @@ export const recordsetsApi = {
     const encoded = encodeURIComponent(zoneName);
     return api.put<{ ok: boolean; count: number }>(
       `/zones/${encoded}/recordsets`,
+      recordsets,
+    );
+  },
+
+  /**
+   * Batch add/update multiple recordsets at once
+   */
+  batchUpsert: (zoneName: string, recordsets: ApiRecordSet[]) => {
+    const encoded = encodeURIComponent(zoneName);
+    return api.post<{ ok: boolean; added: number; total: number }>(
+      `/zones/${encoded}/recordsets/batch`,
       recordsets,
     );
   },

@@ -46,7 +46,9 @@ export function SettingsPage() {
   const [newAllowTransfer, setNewAllowTransfer] = useState("");
 
   // Secondary server settings
-  const [serverRole, setServerRole] = useState<"primary" | "secondary" | "both">("primary");
+  const [serverRole, setServerRole] = useState<
+    "primary" | "secondary" | "both"
+  >("primary");
   const [primaryServers, setPrimaryServers] = useState<string[]>([]);
   const [newPrimaryServer, setNewPrimaryServer] = useState("");
   const [transferSource, setTransferSource] = useState("");
@@ -152,7 +154,6 @@ export function SettingsPage() {
     }
   };
 
-
   const handleAddPrimaryServer = () => {
     if (newPrimaryServer && !primaryServers.includes(newPrimaryServer)) {
       setPrimaryServers([...primaryServers, newPrimaryServer]);
@@ -230,7 +231,7 @@ export function SettingsPage() {
               { value: "both", label: "Both (Primary + Secondary)" },
             ]}
             value={serverRole}
-            onChange={(value) => setServerRole(value as any || "primary")}
+            onChange={(value) => setServerRole((value as any) || "primary")}
           />
         </Stack>
       </Card>
@@ -343,49 +344,49 @@ export function SettingsPage() {
               DNS servers to forward queries to
             </Text>
 
-          <Group>
-            <TextInput
-              placeholder="8.8.8.8"
-              value={newForwarder}
-              onChange={(e) => setNewForwarder(e.currentTarget.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  handleAddForwarder();
-                }
-              }}
-              style={{ flex: 1 }}
-            />
-            <Button
-              leftSection={<IconPlus size={16} />}
-              onClick={handleAddForwarder}
-              disabled={!newForwarder}
-            >
-              Add
-            </Button>
-          </Group>
+            <Group>
+              <TextInput
+                placeholder="8.8.8.8"
+                value={newForwarder}
+                onChange={(e) => setNewForwarder(e.currentTarget.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    handleAddForwarder();
+                  }
+                }}
+                style={{ flex: 1 }}
+              />
+              <Button
+                leftSection={<IconPlus size={16} />}
+                onClick={handleAddForwarder}
+                disabled={!newForwarder}
+              >
+                Add
+              </Button>
+            </Group>
 
-          <Stack gap="xs">
-            {forwarders.map((ip) => (
-              <Group key={ip} justify="space-between">
-                <Badge size="lg" variant="light">
-                  {ip}
-                </Badge>
-                <ActionIcon
-                  color="red"
-                  variant="subtle"
-                  onClick={() => handleRemoveForwarder(ip)}
-                >
-                  <IconTrash size={16} />
-                </ActionIcon>
-              </Group>
-            ))}
-            {forwarders.length === 0 && (
-              <Text size="sm" c="dimmed">
-                No forwarders configured
-              </Text>
-            )}
+            <Stack gap="xs">
+              {forwarders.map((ip) => (
+                <Group key={ip} justify="space-between">
+                  <Badge size="lg" variant="light">
+                    {ip}
+                  </Badge>
+                  <ActionIcon
+                    color="red"
+                    variant="subtle"
+                    onClick={() => handleRemoveForwarder(ip)}
+                  >
+                    <IconTrash size={16} />
+                  </ActionIcon>
+                </Group>
+              ))}
+              {forwarders.length === 0 && (
+                <Text size="sm" c="dimmed">
+                  No forwarders configured
+                </Text>
+              )}
+            </Stack>
           </Stack>
-        </Stack>
         </Card>
       )}
 
@@ -559,48 +560,48 @@ export function SettingsPage() {
                 Who can perform zone transfers (e.g., 'none', 'localhost', ACL
                 names, IP addresses)
               </Text>
-            <Group>
-              <TextInput
-                placeholder="localhost or none"
-                value={newAllowTransfer}
-                onChange={(e) => setNewAllowTransfer(e.currentTarget.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    handleAddAllowTransfer();
-                  }
-                }}
-                style={{ flex: 1 }}
-              />
-              <Button
-                leftSection={<IconPlus size={16} />}
-                onClick={handleAddAllowTransfer}
-                disabled={!newAllowTransfer}
-              >
-                Add
-              </Button>
-            </Group>
-            <Stack gap="xs">
-              {allowTransfer.map((entry) => (
-                <Group key={entry} justify="space-between">
-                  <Badge size="lg" variant="light">
-                    {entry}
-                  </Badge>
-                  <ActionIcon
-                    color="red"
-                    variant="subtle"
-                    onClick={() => handleRemoveAllowTransfer(entry)}
-                  >
-                    <IconTrash size={16} />
-                  </ActionIcon>
-                </Group>
-              ))}
-              {allowTransfer.length === 0 && (
-                <Text size="sm" c="dimmed">
-                  No allow-transfer entries configured
-                </Text>
-              )}
+              <Group>
+                <TextInput
+                  placeholder="localhost or none"
+                  value={newAllowTransfer}
+                  onChange={(e) => setNewAllowTransfer(e.currentTarget.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleAddAllowTransfer();
+                    }
+                  }}
+                  style={{ flex: 1 }}
+                />
+                <Button
+                  leftSection={<IconPlus size={16} />}
+                  onClick={handleAddAllowTransfer}
+                  disabled={!newAllowTransfer}
+                >
+                  Add
+                </Button>
+              </Group>
+              <Stack gap="xs">
+                {allowTransfer.map((entry) => (
+                  <Group key={entry} justify="space-between">
+                    <Badge size="lg" variant="light">
+                      {entry}
+                    </Badge>
+                    <ActionIcon
+                      color="red"
+                      variant="subtle"
+                      onClick={() => handleRemoveAllowTransfer(entry)}
+                    >
+                      <IconTrash size={16} />
+                    </ActionIcon>
+                  </Group>
+                ))}
+                {allowTransfer.length === 0 && (
+                  <Text size="sm" c="dimmed">
+                    No allow-transfer entries configured
+                  </Text>
+                )}
+              </Stack>
             </Stack>
-          </Stack>
           )}
 
           <TextInput

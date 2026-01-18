@@ -127,8 +127,10 @@ def write_zone_file(
     Keeps a minimal SOA + NS. (You can expand later.)
     """
     logger.info(f"Writing zone file {zone_file} for zone {zone_name}")
-    logger.debug(f"Zone has {len(recordsets)} recordsets, {len(nameservers)} nameservers")
-    
+    logger.debug(
+        f"Zone has {len(recordsets)} recordsets, {len(nameservers)} nameservers"
+    )
+
     serial = serial or int(datetime.now(timezone.utc).strftime("%Y%m%d01"))
     lines: list[str] = []
     lines.append(f"$TTL {default_ttl}")

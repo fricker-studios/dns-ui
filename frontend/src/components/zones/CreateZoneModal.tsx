@@ -88,7 +88,7 @@ export function CreateZoneModal({
     const validNameservers = nameservers.filter(
       (ns) => ns.hostname.trim() && ns.ipv4.trim(),
     );
-    
+
     // For secondary zones, we don't need nameservers
     if (role === "primary") {
       if (validNameservers.length === 0) {
@@ -133,7 +133,7 @@ export function CreateZoneModal({
     }));
 
     const primaryNs = nameservers.find((ns) => ns.id === primaryNsId);
-    
+
     const z: Zone = {
       id: uid(),
       name: fqdn,
@@ -156,8 +156,6 @@ export function CreateZoneModal({
       },
       nameServers: apiNameservers,
     };
-
-    console.log("Creating zone", z, apiNameservers);
 
     const apiPayload = zoneToApiZoneCreate(z, apiNameservers);
     apiPayload.role = role; // Add zone role
@@ -281,8 +279,9 @@ export function CreateZoneModal({
         {role === "secondary" && (
           <Paper p="md" withBorder>
             <Text size="sm" c="dimmed">
-              Secondary zones replicate from the primary servers configured in Settings.
-              The zone will be automatically transferred from your primary DNS server.
+              Secondary zones replicate from the primary servers configured in
+              Settings. The zone will be automatically transferred from your
+              primary DNS server.
             </Text>
           </Paper>
         )}
@@ -343,76 +342,80 @@ export function CreateZoneModal({
             <Paper withBorder p="md" radius="md">
               <Stack gap="md">
                 <Text size="sm" c="dimmed">
-                  Define the authoritative nameservers for this zone. Each NS will
-                  have an A record created.
+                  Define the authoritative nameservers for this zone. Each NS
+                  will have an A record created.
                 </Text>
 
-            {nameservers.map((ns, index) => (
-              <Paper key={ns.id} withBorder p="sm" radius="sm">
-                <Stack gap="sm">
-                  <Group justify="space-between" align="center">
-                    <Radio
-                      label="Primary"
-                      checked={primaryNsId === ns.id}
-                      onChange={() => setPrimaryNsId(ns.id)}
-                      disabled={!ns.hostname.trim()}
-                    />
-                    <ActionIcon
-                      variant="subtle"
-                      color="red"
-                      onClick={() => removeNameserver(ns.id)}
-                      disabled={nameservers.length <= 1}
-                    >
-                      <IconTrash size={16} />
-                    </ActionIcon>
-                  </Group>
+                {nameservers.map((ns, index) => (
+                  <Paper key={ns.id} withBorder p="sm" radius="sm">
+                    <Stack gap="sm">
+                      <Group justify="space-between" align="center">
+                        <Radio
+                          label="Primary"
+                          checked={primaryNsId === ns.id}
+                          onChange={() => setPrimaryNsId(ns.id)}
+                          disabled={!ns.hostname.trim()}
+                        />
+                        <ActionIcon
+                          variant="subtle"
+                          color="red"
+                          onClick={() => removeNameserver(ns.id)}
+                          disabled={nameservers.length <= 1}
+                        >
+                          <IconTrash size={16} />
+                        </ActionIcon>
+                      </Group>
 
-                  <Grid>
-                    <Grid.Col span={7}>
-                      <TextInput
-                        label={`NS ${index + 1} Hostname`}
-                        placeholder={
-                          type === "reverse" ? "ns1.example.com" : "ns1"
-                        }
-                        value={ns.hostname}
-                        onChange={(e) =>
-                          updateNameserver(
-                            ns.id,
-                            "hostname",
-                            e.currentTarget.value,
-                          )
-                        }
-                        description={
-                          type === "reverse"
-                            ? "Must be a fully qualified domain name"
-                            : undefined
-                        }
-                      />
-                    </Grid.Col>
-                    <Grid.Col span={5}>
-                      <TextInput
-                        label="IPv4 Address"
-                        placeholder="203.0.113.1"
-                        value={ns.ipv4}
-                        onChange={(e) =>
-                          updateNameserver(ns.id, "ipv4", e.currentTarget.value)
-                        }
-                      />
-                    </Grid.Col>
-                  </Grid>
-                </Stack>
-              </Paper>
-            ))}
+                      <Grid>
+                        <Grid.Col span={7}>
+                          <TextInput
+                            label={`NS ${index + 1} Hostname`}
+                            placeholder={
+                              type === "reverse" ? "ns1.example.com" : "ns1"
+                            }
+                            value={ns.hostname}
+                            onChange={(e) =>
+                              updateNameserver(
+                                ns.id,
+                                "hostname",
+                                e.currentTarget.value,
+                              )
+                            }
+                            description={
+                              type === "reverse"
+                                ? "Must be a fully qualified domain name"
+                                : undefined
+                            }
+                          />
+                        </Grid.Col>
+                        <Grid.Col span={5}>
+                          <TextInput
+                            label="IPv4 Address"
+                            placeholder="203.0.113.1"
+                            value={ns.ipv4}
+                            onChange={(e) =>
+                              updateNameserver(
+                                ns.id,
+                                "ipv4",
+                                e.currentTarget.value,
+                              )
+                            }
+                          />
+                        </Grid.Col>
+                      </Grid>
+                    </Stack>
+                  </Paper>
+                ))}
 
-            <Button
-              variant="light"
-              leftSection={<IconPlus size={16} />}
-              onClick={addNameserver}
-            >
-              Add nameserver
-            </Button>
-          </Stack>
-        </Paper>
+                <Button
+                  variant="light"
+                  leftSection={<IconPlus size={16} />}
+                  onClick={addNameserver}
+                >
+                  Add nameserver
+                </Button>
+              </Stack>
+            </Paper>
           </>
         )}
 

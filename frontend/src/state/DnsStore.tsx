@@ -40,7 +40,11 @@ type Action =
   | { type: "zones/set"; zones: Zone[] }
   | { type: "zone/create"; zone: Zone }
   | { type: "zone/setActive"; zoneId: string; zoneName: string }
-  | { type: "recordsets/set"; recordSets: RecordSet[]; pagination: State["pagination"] }
+  | {
+      type: "recordsets/set";
+      recordSets: RecordSet[];
+      pagination: State["pagination"];
+    }
   | { type: "record/upsert"; recordSet: RecordSet }
   | { type: "record/delete"; recordSetId: string }
   | { type: "change/add"; change: ChangeRequest }
@@ -196,12 +200,6 @@ const DnsStoreContext = createContext<Store | null>(null);
 export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  console.log('[DnsStore] Render, state:', {
-    activeZoneId: state.activeZoneId,
-    recordSetsCount: state.recordSets.length,
-    pagination: state.pagination,
-  });
-
   // Store activeZoneId in a ref to avoid dependency issues
   const activeZoneIdRef = useRef(state.activeZoneId);
   activeZoneIdRef.current = state.activeZoneId;
@@ -220,20 +218,18 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
   } = useRecordSetsApi(
     state.activeZoneName,
     1, // Always fetch first page
-    10000 // High page size to get all records for client-side filtering/pagination
+    10000, // High page size to get all records for client-side filtering/pagination
   );
   const { replaceRecordSets } = useReplaceRecordSets();
 
   // Sync API zones to state
   useEffect(() => {
-    console.log('[DnsStore] zones effect triggered', { apiZonesCount: apiZones?.length });
     if (apiZones && apiZones.length > 0) {
       const zones = apiZones.map(apiZoneToZone);
       dispatch({ type: "zones/set", zones });
 
       // Set first zone as active if none selected
       if (!state.activeZoneId && zones.length > 0) {
-        console.log('[DnsStore] Setting first zone as active:', zones[0].id);
         dispatch({
           type: "zone/setActive",
           zoneId: zones[0].id,
@@ -251,17 +247,11 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
   const paginationTotalPages = apiPagination?.totalPages;
 
   useEffect(() => {
-    console.log('[DnsStore] recordsets effect triggered', {
-      apiRecordSetsCount: apiRecordSets?.length,
-      paginationTotal,
-      activeZoneId: activeZoneIdRef.current,
-    });
     const activeZoneId = activeZoneIdRef.current;
     if (activeZoneId && apiRecordSets && apiRecordSets.length >= 0) {
       const recordsets = apiRecordSets.map((rs) =>
         apiRecordSetToRecordSet(rs, activeZoneId),
       );
-      console.log('[DnsStore] Dispatching recordsets/set', { count: recordsets.length });
       dispatch({
         type: "recordsets/set",
         recordSets: recordsets,
@@ -273,7 +263,13 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
         },
       });
     }
-  }, [apiRecordSets, paginationTotal, paginationPage, paginationPageSize, paginationTotalPages]);
+  }, [
+    apiRecordSets,
+    paginationTotal,
+    paginationPage,
+    paginationPageSize,
+    paginationTotalPages,
+  ]);
 
   const activeZone = useMemo(() => {
     const z = state.zones.find((x) => x.id === state.activeZoneId);
@@ -290,12 +286,10 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
 
   // Stable callback references to prevent infinite loops
   const setPage = useCallback((page: number) => {
-    console.log('[DnsStore] setPage called:', page);
     dispatch({ type: "pagination/setPage", page });
   }, []);
 
   const setPageSize = useCallback((pageSize: number) => {
-    console.log('[DnsStore] setPageSize called:', pageSize);
     dispatch({ type: "pagination/setPageSize", pageSize });
   }, []);
 
@@ -416,11 +410,7 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
         const change = state.changes.find((c) => c.id === changeId);
         if (change && change.status === "PENDING") {
           dispatch({ type: "change/revert", changeId });
-          log(
-            change.zoneId,
-            "Reverted change",
-            `Discarded: ${change.summary}`,
-          );
+          log(change.zoneId, "Reverted change", `Discarded: ${change.summary}`);
           notifications.show({
             color: "blue",
             title: "Change reverted",
@@ -437,7 +427,11 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
         ).length;
         if (pendingCount > 0) {
           dispatch({ type: "change/revertAll", zoneId });
-          log(zoneId, "Reverted all changes", `Discarded ${pendingCount} changes`);
+          log(
+            zoneId,
+            "Reverted all changes",
+            `Discarded ${pendingCount} changes`,
+          );
           notifications.show({
             color: "blue",
             title: "All changes reverted",
@@ -447,10 +441,17 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
           refetchRecordSetsApi();
         }
       },
-            
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state, activeZone, zoneRecordSets, zonesLoading, recordsetsLoading, setPage, setPageSize]);
+  }, [
+    state,
+    activeZone,
+    zoneRecordSets,
+    zonesLoading,
+    recordsetsLoading,
+    setPage,
+    setPageSize,
+  ]);
 
   return (
     <DnsStoreContext.Provider value={api}>{children}</DnsStoreContext.Provider>

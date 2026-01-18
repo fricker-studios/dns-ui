@@ -175,7 +175,9 @@ export function RecordSetTable({
             ]}
           />
           <Text size="sm" c="dimmed">
-            Showing {((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalRecords)} of {totalRecords} records
+            Showing {(currentPage - 1) * pageSize + 1}-
+            {Math.min(currentPage * pageSize, totalRecords)} of {totalRecords}{" "}
+            records
           </Text>
         </Group>
         {totalPages > 1 && (

@@ -24,16 +24,18 @@ export function ExportsPage() {
     if (activeZone) {
       // Only try to export zone file for primary zones
       if (activeZone.role !== "secondary") {
-        exportZoneFile(activeZone.name).then((data) => {
-          if (data) setApiZoneFile(data.text);
-        }).catch((err) => {
-          console.error("Failed to export zone file:", err);
-          setApiZoneFile("");
-        });
+        exportZoneFile(activeZone.name)
+          .then((data) => {
+            if (data) setApiZoneFile(data.text);
+          })
+          .catch((err) => {
+            console.error("Failed to export zone file:", err);
+            setApiZoneFile("");
+          });
       } else {
         setApiZoneFile("");
       }
-      
+
       exportZoneStanza(activeZone.name).then((data) => {
         if (data) setApiStanza(data.text);
       });
@@ -77,7 +79,9 @@ export function ExportsPage() {
             ) : activeZone.role === "secondary" ? (
               <Card withBorder p="md">
                 <Text size="sm" c="dimmed">
-                  Zone files cannot be exported for secondary zones. Secondary zones store their data in BIND's binary format after zone transfer from the primary server.
+                  Zone files cannot be exported for secondary zones. Secondary
+                  zones store their data in BIND's binary format after zone
+                  transfer from the primary server.
                 </Text>
               </Card>
             ) : (

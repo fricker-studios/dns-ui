@@ -83,13 +83,20 @@ export function apiRecordSetToRecordSet(
  * Convert frontend recordset to API recordset
  */
 export function recordSetToApiRecordSet(rs: RecordSet): ApiRecordSet {
-  return {
+  const apiRecordSet: ApiRecordSet = {
     name: normalizeFqdn(rs.name),
     type: rs.type,
-    ttl: rs.ttl,
     values: rs.values.map(recordValueToApiRecordValue),
-    comment: rs.comment,
   };
+
+  if (rs.ttl !== undefined && rs.ttl !== null) {
+    apiRecordSet.ttl = rs.ttl;
+  }
+  if (rs.comment !== undefined && rs.comment !== null) {
+    apiRecordSet.comment = rs.comment;
+  }
+
+  return apiRecordSet;
 }
 
 /**
@@ -113,9 +120,15 @@ function recordValueToApiRecordValue(value: RecordValue): ApiRecordValue {
     value: value.value,
   };
 
-  if (value.priority !== undefined) apiValue.priority = value.priority;
-  if (value.weight !== undefined) apiValue.weight = value.weight;
-  if (value.port !== undefined) apiValue.port = value.port;
+  if (value.priority !== undefined && value.priority !== null) {
+    apiValue.priority = value.priority;
+  }
+  if (value.weight !== undefined && value.weight !== null) {
+    apiValue.weight = value.weight;
+  }
+  if (value.port !== undefined && value.port !== null) {
+    apiValue.port = value.port;
+  }
 
   return apiValue;
 }

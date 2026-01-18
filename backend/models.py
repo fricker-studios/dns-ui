@@ -1,7 +1,13 @@
 from __future__ import annotations
 
+import ipaddress
 from typing import Literal
-from pydantic import BaseModel, Field, field_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    field_validator,
+    ValidationError as PydanticValidationError,
+)
 
 
 ZoneType = Literal["forward", "reverse"]
@@ -48,10 +54,49 @@ class RecordSet(BaseModel):
     def _norm_name(cls, v: str) -> str:
         return normalize_fqdn(v)
 
+    @field_validator("values")
+    @classmethod
+    def _validate_values(cls, v: list[RecordValue], info) -> list[RecordValue]:
+        """Validate record values based on record type"""
+        record_type = info.data.get("type")
+        if not record_type:
+            return v
+
+        for value in v:
+            val = value.value.strip()
+
+            # Validate A records (IPv4)
+            if record_type == "A":
+                try:
+                    ipaddress.IPv4Address(val)
+                except ValueError:
+                    raise ValueError(
+                        f"Invalid IPv4 address for A record: '{val}'. Each octet must be 0-255."
+                    )
+
+            # Validate AAAA records (IPv6)
+            elif record_type == "AAAA":
+                try:
+                    ipaddress.IPv6Address(val)
+                except ValueError:
+                    raise ValueError(f"Invalid IPv6 address for AAAA record: '{val}'")
+
+        return v
+
 
 class NameServer(BaseModel):
     hostname: str
     ipv4: str
+
+    @field_validator("ipv4")
+    @classmethod
+    def _validate_ipv4(cls, v: str) -> str:
+        """Validate that ipv4 is a valid IPv4 address"""
+        try:
+            ipaddress.IPv4Address(v.strip())
+        except ValueError:
+            raise ValueError(f"Invalid IPv4 address: '{v}'. Each octet must be 0-255.")
+        return v.strip()
 
 
 class ZoneCreate(BaseModel):

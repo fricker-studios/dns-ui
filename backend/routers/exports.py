@@ -3,7 +3,11 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException
 
 from backend.logging import getLogger
-from backend.bind_files import read_managed_include, parse_managed_zones, build_zone_stanza
+from backend.bind_files import (
+    read_managed_include,
+    parse_managed_zones,
+    build_zone_stanza,
+)
 
 logger = getLogger()
 from backend.dns_zone import read_zone_file
@@ -29,7 +33,10 @@ def export_zone_file(zone_name: str):
     zone_fqdn, stanza, is_secondary = _resolve(zone_name)
     if is_secondary:
         logger.warning(f"Cannot export zone file for secondary zone {zone_name}")
-        raise HTTPException(400, "Cannot export zone file for secondary zones (data is in binary format)")
+        raise HTTPException(
+            400,
+            "Cannot export zone file for secondary zones (data is in binary format)",
+        )
     with open(stanza.file_path, "r") as f:
         content = f.read()
         logger.debug(f"Exported zone file for {zone_name}, size: {len(content)} bytes")
