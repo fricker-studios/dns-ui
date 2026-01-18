@@ -2,8 +2,11 @@ import { useState } from "react";
 import {
   ActionIcon,
   Badge,
+  Button,
+  Checkbox,
   Code,
   Group,
+  Menu,
   ScrollArea,
   Select,
   Stack,
@@ -11,7 +14,7 @@ import {
   Text,
   Pagination,
 } from "@mantine/core";
-import { IconEdit, IconTrash } from "@tabler/icons-react";
+import { IconEdit, IconTrash, IconDotsVertical } from "@tabler/icons-react";
 import type { RecordSet } from "../../types/dns";
 import { humanizeZoneName } from "../../lib/bind";
 import { useDnsStore } from "../../state/DnsStore";
@@ -33,6 +36,11 @@ interface RecordSetTableProps {
   totalPages: number;
   onPageChange: (page: number) => void;
   onPageSizeChange: (pageSize: number) => void;
+  selectedIds: Set<string>;
+  onToggleSelection: (id: string) => void;
+  onToggleSelectAll: () => void;
+  allSelected: boolean;
+  onBulkDelete: () => void;
 }
 
 export function RecordSetTable({
@@ -43,6 +51,11 @@ export function RecordSetTable({
   totalPages,
   onPageChange,
   onPageSizeChange,
+  selectedIds,
+  onToggleSelection,
+  onToggleSelectAll,
+  allSelected,
+  onBulkDelete,
 }: RecordSetTableProps) {
   const { activeZone, deleteRecordSet } = useDnsStore();
   const [edit, setEdit] = useState<RecordSet | null>(null);
@@ -51,10 +64,45 @@ export function RecordSetTable({
 
   return (
     <Stack gap="md">
+      {selectedIds.size > 0 && (
+        <Group justify="space-between" align="center">
+          <Text size="sm" c="dimmed">
+            {selectedIds.size} record{selectedIds.size !== 1 ? "s" : ""}{" "}
+            selected
+          </Text>
+          <Menu shadow="md" width={200}>
+            <Menu.Target>
+              <Button
+                variant="light"
+                leftSection={<IconDotsVertical size={16} />}
+                size="sm"
+              >
+                Actions
+              </Button>
+            </Menu.Target>
+            <Menu.Dropdown>
+              <Menu.Item
+                color="red"
+                leftSection={<IconTrash size={16} />}
+                onClick={onBulkDelete}
+              >
+                Delete selected
+              </Menu.Item>
+            </Menu.Dropdown>
+          </Menu>
+        </Group>
+      )}
       <ScrollArea type="hover">
         <Table highlightOnHover verticalSpacing="sm">
           <Table.Thead>
             <Table.Tr>
+              <Table.Th w={40}>
+                <Checkbox
+                  checked={allSelected}
+                  indeterminate={selectedIds.size > 0 && !allSelected}
+                  onChange={onToggleSelectAll}
+                />
+              </Table.Th>
               <Table.Th>Name</Table.Th>
               <Table.Th w={90}>Type</Table.Th>
               <Table.Th>Values</Table.Th>
@@ -66,6 +114,12 @@ export function RecordSetTable({
           <Table.Tbody>
             {recordSets.map((rs) => (
               <Table.Tr key={rs.id}>
+                <Table.Td>
+                  <Checkbox
+                    checked={selectedIds.has(rs.id)}
+                    onChange={() => onToggleSelection(rs.id)}
+                  />
+                </Table.Td>
                 <Table.Td>
                   <Text fw={700}>{humanizeZoneName(rs.name)}</Text>
                   {rs.comment ? (

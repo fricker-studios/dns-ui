@@ -41,7 +41,7 @@ const types: (RecordType | "ALL")[] = [
 export function RecordsPage({
   initialFilter,
 }: { initialFilter?: RecordType } = {}) {
-  const { activeZone, zoneRecordSets } = useDnsStore();
+  const { activeZone, zoneRecordSets, deleteRecordSet } = useDnsStore();
 
   const [query, setQuery] = useState("");
   const [type, setType] = useState<RecordType | "ALL">(initialFilter ?? "ALL");
@@ -49,11 +49,12 @@ export function RecordsPage({
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
   const [showBulkAdd, setShowBulkAdd] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Track previous filter values
   const prevFiltersRef = useRef({ query, type, delegationsOnly });
 
-  // Reset to page 1 when filters change (in useEffect to avoid setState during render)
+  // Reset to page 1 and clear selections when filters change (in useEffect to avoid setState during render)
   useEffect(() => {
     const prev = prevFiltersRef.current;
     if (
@@ -63,8 +64,14 @@ export function RecordsPage({
     ) {
       prevFiltersRef.current = { query, type, delegationsOnly };
       setCurrentPage(1);
+      setSelectedIds(new Set());
     }
   }, [query, type, delegationsOnly]);
+
+  // Clear selections when page changes
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [currentPage, pageSize]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -92,6 +99,47 @@ export function RecordsPage({
   }, [filtered, currentPage, pageSize]);
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1;
+
+  const handleBulkDelete = () => {
+    if (selectedIds.size === 0) return;
+
+    const recordsToDelete = zoneRecordSets.filter((rs) =>
+      selectedIds.has(rs.id),
+    );
+    recordsToDelete.forEach((rs) => {
+      deleteRecordSet(rs.id, `Delete ${rs.type} ${rs.name}`, [
+        "Removed recordset",
+        ...rs.values.map((v) => `- ${v.value}`),
+      ]);
+    });
+
+    setSelectedIds(new Set());
+  };
+
+  const toggleSelection = (id: string) => {
+    const newSelected = new Set(selectedIds);
+    if (newSelected.has(id)) {
+      newSelected.delete(id);
+    } else {
+      newSelected.add(id);
+    }
+    setSelectedIds(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    if (
+      selectedIds.size === paginatedFiltered.length &&
+      paginatedFiltered.length > 0
+    ) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(paginatedFiltered.map((rs) => rs.id)));
+    }
+  };
+
+  const allSelected =
+    paginatedFiltered.length > 0 &&
+    selectedIds.size === paginatedFiltered.length;
 
   // If showing bulk add page, render that instead (after all hooks)
   if (showBulkAdd) {
@@ -212,6 +260,11 @@ export function RecordsPage({
           totalPages={totalPages}
           onPageChange={setCurrentPage}
           onPageSizeChange={setPageSize}
+          selectedIds={selectedIds}
+          onToggleSelection={toggleSelection}
+          onToggleSelectAll={toggleSelectAll}
+          allSelected={allSelected}
+          onBulkDelete={handleBulkDelete}
         />
       </Stack>
     </Card>
