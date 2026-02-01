@@ -20,10 +20,12 @@ import {
   IconClock,
   IconPlus,
 } from "@tabler/icons-react";
+import { notifications } from "@mantine/notifications";
 import type { RecordType } from "../../types/dns";
 import { useDnsStore } from "../../state/DnsStore";
 import { RecordSetTable } from "./RecordSetTable";
 import { BulkAddRecordsPage } from "./BulkAddRecordsPage";
+import { getCookie, setCookie } from "../../lib/utils";
 
 const types: (RecordType | "ALL")[] = [
   "ALL",
@@ -48,6 +50,8 @@ export function RecordsPage({
   const [delegationsOnly, setDelegationsOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(50);
+  const [sortBy, setSortBy] = useState<"name" | "type" | "values" | null>(null);
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [showBulkAdd, setShowBulkAdd] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -75,7 +79,7 @@ export function RecordsPage({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return zoneRecordSets.filter((rs) => {
+    const results = zoneRecordSets.filter((rs) => {
       if (delegationsOnly && rs.type !== "NS") return false;
       if (type !== "ALL" && rs.type !== type) return false;
       if (!q) return true;
@@ -86,7 +90,24 @@ export function RecordsPage({
         (rs.comment ?? "").toLowerCase().includes(q)
       );
     });
-  }, [zoneRecordSets, query, type, delegationsOnly]);
+
+    // Apply sorting if active
+    if (!sortBy) return results;
+
+    return results.sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === "name") {
+        comparison = a.name.localeCompare(b.name);
+      } else if (sortBy === "type") {
+        comparison = a.type.localeCompare(b.type);
+      } else if (sortBy === "values") {
+        const aValue = a.values[0]?.value ?? "";
+        const bValue = b.values[0]?.value ?? "";
+        comparison = aValue.localeCompare(bValue);
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [zoneRecordSets, query, type, delegationsOnly, sortBy, sortDirection]);
 
   // Client-side pagination of filtered results
   const paginatedFiltered = useMemo(() => {
@@ -223,7 +244,25 @@ export function RecordsPage({
           <Button
             variant="light"
             leftSection={<IconPlus size={16} />}
-            onClick={() => setShowBulkAdd(true)}
+            onClick={() => {
+              // Show reminder notification at most once per hour
+              const lastShown = getCookie("dnsui_last_refresh_reminder");
+              const now = Date.now();
+              const oneHour = 60 * 60 * 1000;
+
+              if (!lastShown || now - parseInt(lastShown, 10) > oneHour) {
+                notifications.show({
+                  color: "blue",
+                  title: "Reminder",
+                  message:
+                    "If others may be editing this zone, refresh the page first to avoid conflicts",
+                  autoClose: 5000,
+                });
+                setCookie("dnsui_last_refresh_reminder", now.toString(), 2);
+              }
+
+              setShowBulkAdd(true);
+            }}
           >
             Add records
           </Button>
@@ -265,6 +304,21 @@ export function RecordsPage({
           onToggleSelectAll={toggleSelectAll}
           allSelected={allSelected}
           onBulkDelete={handleBulkDelete}
+          sortBy={sortBy}
+          sortDirection={sortDirection}
+          onSort={(field) => {
+            if (sortBy === field) {
+              if (sortDirection === "asc") {
+                setSortDirection("desc");
+              } else {
+                setSortBy(null);
+                setSortDirection("asc");
+              }
+            } else {
+              setSortBy(field);
+              setSortDirection("asc");
+            }
+          }}
         />
       </Stack>
     </Card>

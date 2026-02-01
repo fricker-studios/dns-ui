@@ -12,7 +12,7 @@ import { DnsStoreProvider } from "./state/DnsStore";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <MantineProvider theme={theme} defaultColorScheme="dark">
-      <Notifications position="top-right" />
+      <Notifications position="bottom-right" />
       <DnsStoreProvider>
         <App />
       </DnsStoreProvider>

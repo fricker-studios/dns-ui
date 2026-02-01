@@ -228,12 +228,17 @@ export function DnsStoreProvider({ children }: { children: React.ReactNode }) {
       const zones = apiZones.map(apiZoneToZone);
       dispatch({ type: "zones/set", zones });
 
-      // Set first zone as active if none selected
+      // Set first non-reverse zone as active if none selected
       if (!state.activeZoneId && zones.length > 0) {
+        // Find first non-reverse zone (not ending in .arpa)
+        const nonReverseZone = zones.find(
+          (z) => !z.name.endsWith(".arpa") && !z.name.endsWith(".arpa."),
+        );
+        const defaultZone = nonReverseZone ?? zones[0];
         dispatch({
           type: "zone/setActive",
-          zoneId: zones[0].id,
-          zoneName: zones[0].name,
+          zoneId: defaultZone.id,
+          zoneName: defaultZone.name,
         });
       }
     }

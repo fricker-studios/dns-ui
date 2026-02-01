@@ -14,7 +14,13 @@ import {
   Text,
   Pagination,
 } from "@mantine/core";
-import { IconEdit, IconTrash, IconDotsVertical } from "@tabler/icons-react";
+import {
+  IconEdit,
+  IconTrash,
+  IconDotsVertical,
+  IconChevronUp,
+  IconChevronDown,
+} from "@tabler/icons-react";
 import type { RecordSet } from "../../types/dns";
 import { humanizeZoneName } from "../../lib/bind";
 import { useDnsStore } from "../../state/DnsStore";
@@ -41,6 +47,9 @@ interface RecordSetTableProps {
   onToggleSelectAll: () => void;
   allSelected: boolean;
   onBulkDelete: () => void;
+  sortBy: "name" | "type" | "values" | null;
+  sortDirection: "asc" | "desc";
+  onSort: (field: "name" | "type" | "values") => void;
 }
 
 export function RecordSetTable({
@@ -56,6 +65,9 @@ export function RecordSetTable({
   onToggleSelectAll,
   allSelected,
   onBulkDelete,
+  sortBy,
+  sortDirection,
+  onSort,
 }: RecordSetTableProps) {
   const { activeZone, deleteRecordSet } = useDnsStore();
   const [edit, setEdit] = useState<RecordSet | null>(null);
@@ -103,9 +115,57 @@ export function RecordSetTable({
                   onChange={onToggleSelectAll}
                 />
               </Table.Th>
-              <Table.Th>Name</Table.Th>
-              <Table.Th w={90}>Type</Table.Th>
-              <Table.Th>Values</Table.Th>
+              <Table.Th>
+                <Group gap={4} justify="space-between">
+                  Name
+                  <ActionIcon
+                    size="xs"
+                    variant={sortBy === "name" ? "filled" : "subtle"}
+                    color={sortBy === "name" ? "blue" : "gray"}
+                    onClick={() => onSort("name")}
+                  >
+                    {sortBy === "name" && sortDirection === "desc" ? (
+                      <IconChevronDown size={14} />
+                    ) : (
+                      <IconChevronUp size={14} />
+                    )}
+                  </ActionIcon>
+                </Group>
+              </Table.Th>
+              <Table.Th w={90}>
+                <Group gap={4} justify="space-between">
+                  Type
+                  <ActionIcon
+                    size="xs"
+                    variant={sortBy === "type" ? "filled" : "subtle"}
+                    color={sortBy === "type" ? "blue" : "gray"}
+                    onClick={() => onSort("type")}
+                  >
+                    {sortBy === "type" && sortDirection === "desc" ? (
+                      <IconChevronDown size={14} />
+                    ) : (
+                      <IconChevronUp size={14} />
+                    )}
+                  </ActionIcon>
+                </Group>
+              </Table.Th>
+              <Table.Th>
+                <Group gap={4} justify="space-between">
+                  Values
+                  <ActionIcon
+                    size="xs"
+                    variant={sortBy === "values" ? "filled" : "subtle"}
+                    color={sortBy === "values" ? "blue" : "gray"}
+                    onClick={() => onSort("values")}
+                  >
+                    {sortBy === "values" && sortDirection === "desc" ? (
+                      <IconChevronDown size={14} />
+                    ) : (
+                      <IconChevronUp size={14} />
+                    )}
+                  </ActionIcon>
+                </Group>
+              </Table.Th>
               <Table.Th w={90}>TTL</Table.Th>
               <Table.Th w={170}>Updated</Table.Th>
               <Table.Th w={110}>Actions</Table.Th>
