@@ -24,4 +24,3 @@ To get started, access the UI (http://localhost:8080) and create a new hosted zo
 
 After creating a hosted zone, select the zone and choose "Create record" to create a new recordset. Choose the appropriate option (A/AAAA/CNAME/etc) and fill out the details. To actually apply the changes to the DNS server click on "Apply Changes" (otherwise changes will be lost after leaving the page).
 
-
