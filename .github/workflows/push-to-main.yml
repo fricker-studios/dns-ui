@@ -1,4 +1,4 @@
-name: Build and Deploy to Development
+name: Build new Latest Image
 
 on:
   push:
