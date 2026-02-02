@@ -57,6 +57,12 @@ jobs:
       tags: |
         ${{ github.ref_name }}
         latest
+      build_args: |
+        DNS_SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+        DNS_SENTRY_ENVIRONMENT=prod
+        DNS_LOG_LEVEL=INFO
+        DNS_SENTRY_TRACES_SAMPLE_RATE=0.1
+        DNS_SENTRY_PROFILES_SAMPLE_RATE=0.1
     secrets:
       registry_username: ${{ secrets.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
@@ -71,6 +77,12 @@ jobs:
       tags: |
         ${{ github.ref_name }}
         latest
+      build_args: |
+        DNS_SENTRY_DSN=${{ secrets.SENTRY_DSN }}
+        DNS_SENTRY_ENVIRONMENT=prod
+        DNS_LOG_LEVEL=INFO
+        DNS_SENTRY_TRACES_SAMPLE_RATE=0.1
+        DNS_SENTRY_PROFILES_SAMPLE_RATE=0.1
 
   update-gitops-manifest:
     name: Update GitOps Manifest (Demo)
