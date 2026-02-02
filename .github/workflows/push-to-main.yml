@@ -14,5 +14,5 @@ jobs:
       tags: |
         latest
     secrets:
-      registry_username: ${{ secrets.REGISTRY_USERNAME }}
+      registry_username: ${{ vars.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
