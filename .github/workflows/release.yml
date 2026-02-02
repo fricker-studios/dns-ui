@@ -6,8 +6,49 @@ on:
       - '*'
 
 jobs:
+  build-ui-files:
+    runs-on: self-hosted
+    name: Build UI Files
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set Up Environment
+        run: make env
+
+      - name: Build UI files
+        env:
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          VITE_SENTRY_RELEASE: ${{ github.ref_name }}
+          VITE_SENTRY_ENVIRONMENT: prod
+          VITE_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: |
+          npm --prefix=frontend run build
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: frontend/node_modules
+          key: node-modules-${{ hashFiles('frontend/package.json') }}
+
+      - name: Cache Python venv
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: python-venv-${{ hashFiles('pyproject.toml') }}
+
+      - name: Upload UI artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-files
+          path: |
+            frontend/dist
+
   build-multiarch-internal:
     name: Build and Push Multi-Arch Image (Internal)
+    needs: build-ui-files
     uses: fricker-studios/github-actions/.github/workflows/build-multiarch-image.yml@main
     with:
       image_name: ${{ vars.INTERNAL_REGISTRY_URL }}/internal/dns-ui
@@ -22,6 +63,7 @@ jobs:
 
   build-multiarch-docker:
     name: Build and Push Multi-Arch Image (Docker Hub)
+    needs: build-ui-files
     uses: fricker-studios/github-actions/.github/workflows/build-multiarch-image.yml@main
     with:
       image_name: alexfricker/dns-ui

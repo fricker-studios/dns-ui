@@ -1,12 +1,3 @@
-# --- build UI ---
-FROM node:20 AS ui-build
-WORKDIR /ui
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
-# --- build API ---
 FROM python:3.12.12-slim
 
 # Keeps Python from generating .pyc files in the container
@@ -58,7 +49,7 @@ RUN chmod +x ./entrypoint.sh
 COPY backend ./backend
 
 # UI build output
-COPY --from=ui-build /ui/dist /usr/share/nginx/html
+COPY frontend/dist /usr/share/nginx/html
 
 # nginx config
 COPY nginx/default.conf /etc/nginx/sites-available/default

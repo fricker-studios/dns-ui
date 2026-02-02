@@ -24,7 +24,10 @@ clean:
 	rm -rf frontend/node_modules
 	rm -rf .venv
 
-build:
+ui-build:
+	npm --prefix=frontend run build
+
+build: ui-build
 	docker build -t $(APP_NAME) .
 
 runserver: build
