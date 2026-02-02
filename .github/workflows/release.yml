@@ -35,7 +35,7 @@ jobs:
     needs: [build-multiarch-internal, build-multiarch-docker]
     uses: fricker-studios/github-actions/.github/workflows/update-gitops-manifest.yml@main
     with:
-      image_tag: ${{ needs.build-multiarch-internal.outputs.image_tag }}
+      image_tag: v.${{ github.ref_name }}
       gitops_repo: fricker-studios/gitops-demo
       project_source_dir: dns
     secrets:
