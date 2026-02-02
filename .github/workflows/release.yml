@@ -47,3 +47,5 @@ jobs:
     uses: fricker-studios/github-actions/.github/workflows/argocd-sync.yml@main
     with:
       application: dns-demo
+    secrets:
+      ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
