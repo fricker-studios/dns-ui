@@ -1,13 +1,48 @@
-import React from "react";
+import React, { useEffect } from "react";
 import ReactDOM from "react-dom/client";
+import {
+  createRoutesFromChildren,
+  matchRoutes,
+  useLocation,
+  useNavigationType,
+} from "react-router-dom";
 import { MantineProvider } from "@mantine/core";
-import "@mantine/core/styles.css";
 import { Notifications } from "@mantine/notifications";
-import "@mantine/notifications/styles.css";
+import * as Sentry from "@sentry/react";
 
 import App from "./App";
 import { theme } from "./theme";
 import { DnsStoreProvider } from "./state/DnsStore";
+
+import "@mantine/core/styles.css";
+import "@mantine/notifications/styles.css";
+
+// Initialize Sentry for error tracking and performance monitoring
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+const DEFAULT_SENTRY_ENVIRONMENT = "local";
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    sendDefaultPii: true,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      Sentry.replayIntegration(),
+      Sentry.reactRouterV7BrowserTracingIntegration({
+        useEffect,
+        useLocation,
+        useNavigationType,
+        createRoutesFromChildren,
+        matchRoutes,
+      }),
+    ],
+    tracesSampleRate: 0.1,
+    replaysSessionSampleRate: 0.1,
+    replaysOnErrorSampleRate: 1.0,
+    environment:
+      import.meta.env.VITE_SENTRY_ENVIRONMENT || DEFAULT_SENTRY_ENVIRONMENT,
+    release: import.meta.env.VITE_SENTRY_RELEASE,
+  });
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

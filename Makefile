@@ -8,7 +8,7 @@ python-env:
 	pip install -U pip; \
 	pip install poetry==$(POETRY_VERSION); \
 	poetry config virtualenvs.in-project true; \
-	poetry install --no-root --with dev
+	poetry install --no-root
 	@echo "Environment setup complete."
 	@echo "Activate with '. .venv/bin/activate', or use 'make shell' to enter a Docker container."
 
@@ -24,7 +24,10 @@ clean:
 	rm -rf frontend/node_modules
 	rm -rf .venv
 
-build:
+ui-build:
+	npm --prefix=frontend run build
+
+build: ui-build
 	docker build -t $(APP_NAME) .
 
 runserver: build

@@ -1,19 +1,24 @@
-# --- build UI ---
-FROM node:20 AS ui-build
-WORKDIR /ui
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
-
-# --- build API ---
 FROM python:3.12.12-slim
+
+# Build arguments for configuration
+ARG DNS_SENTRY_DSN=""
+ARG DNS_SENTRY_ENVIRONMENT="development"
+ARG DNS_SENTRY_TRACES_SAMPLE_RATE="0.1"
+ARG DNS_SENTRY_PROFILES_SAMPLE_RATE="0.1"
+ARG DNS_LOG_LEVEL="INFO"
 
 # Keeps Python from generating .pyc files in the container
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # Turns off buffering for easier container logging
 ENV PYTHONUNBUFFERED=1
+
+# Set DNS API configuration from build args
+ENV DNS_SENTRY_DSN=${DNS_SENTRY_DSN}
+ENV DNS_SENTRY_ENVIRONMENT=${DNS_SENTRY_ENVIRONMENT}
+ENV DNS_SENTRY_TRACES_SAMPLE_RATE=${DNS_SENTRY_TRACES_SAMPLE_RATE}
+ENV DNS_SENTRY_PROFILES_SAMPLE_RATE=${DNS_SENTRY_PROFILES_SAMPLE_RATE}
+ENV DNS_LOG_LEVEL=${DNS_LOG_LEVEL}
 
 # Install system dependencies
 RUN set -eux; \
@@ -58,7 +63,7 @@ RUN chmod +x ./entrypoint.sh
 COPY backend ./backend
 
 # UI build output
-COPY --from=ui-build /ui/dist /usr/share/nginx/html
+COPY frontend/dist /usr/share/nginx/html
 
 # nginx config
 COPY nginx/default.conf /etc/nginx/sites-available/default
