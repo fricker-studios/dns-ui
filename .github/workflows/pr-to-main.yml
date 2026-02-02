@@ -18,3 +18,14 @@ jobs:
     secrets:
       registry_username: ${{ secrets.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
+
+  update-gitops-manifest:
+    name: Update GitOps Manifest (Development)
+    needs: build-multiarch-internal
+    uses: fricker-studios/github-actions/.github/workflows/update-gitops-manifest.yml@main
+    with:
+      image_tag: ${{ needs.build-multiarch-internal.outputs.image_tag }}
+      gitops_repo: fricker-studios/gitops-dev
+      project_source_dir: dns
+    secrets:
+      GITOPS_ACCESS_TOKEN: ${{ secrets.GITOPS_PAT }}

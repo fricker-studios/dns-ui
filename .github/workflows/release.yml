@@ -29,3 +29,14 @@ jobs:
       tags: |
         v.${{ github.ref_name }}
         latest
+
+  update-gitops-manifest:
+    name: Update GitOps Manifest (Demo)
+    needs: [build-multiarch-internal, build-multiarch-docker]
+    uses: fricker-studios/github-actions/.github/workflows/update-gitops-manifest.yml@main
+    with:
+      image_tag: ${{ needs.build-multiarch-internal.outputs.image_tag }}
+      gitops_repo: fricker-studios/gitops-demo
+      project_source_dir: dns
+    secrets:
+      GITOPS_ACCESS_TOKEN: ${{ secrets.GITOPS_PAT }}
