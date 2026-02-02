@@ -49,3 +49,13 @@ jobs:
       application: dns-demo
     secrets:
       ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+
+  create-release:
+    name: Create GitHub Release
+    needs: [build-multiarch-internal, build-multiarch-docker, argocd-sync]
+    uses: fricker-studios/github-actions/.github/workflows/github-release.yml@main
+    with:
+      github_ref: v.${{ github.ref_name }}
+      generate_notes: true
+    secrets:
+      github_token: ${{ secrets.GITOPS_PAT }}
