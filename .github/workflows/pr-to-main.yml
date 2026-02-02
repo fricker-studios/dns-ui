@@ -29,3 +29,10 @@ jobs:
       project_source_dir: dns
     secrets:
       GITOPS_ACCESS_TOKEN: ${{ secrets.GITOPS_PAT }}
+
+  argocd-sync:
+    name: ArgoCD Sync Application (Development)
+    needs: update-gitops-manifest
+    uses: fricker-studios/github-actions/.github/workflows/argocd-sync.yml@main
+    with:
+      application: dns-dev
