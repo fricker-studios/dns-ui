@@ -1,5 +1,7 @@
 # DNS Console
 [![Release to Production](https://github.com/fricker-studios/dns-ui/actions/workflows/release.yml/badge.svg)](https://github.com/fricker-studios/dns-ui/actions/workflows/release.yml)
+![Release](https://img.shields.io/github/v/release/fricker-studios/dns-ui?display_name=tag&sort=semver)
+
 
 This repository/project serves to ease in the creation and management of:
   - bind (DNS) & server configuration
