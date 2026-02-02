@@ -1,6 +1,6 @@
 # DNS Console
 [![Release to Production](https://github.com/fricker-studios/dns-ui/actions/workflows/release.yml/badge.svg)](https://github.com/fricker-studios/dns-ui/actions/workflows/release.yml)
-![Release](https://img.shields.io/github/v/release/fricker-studios/dns-ui?display_name=tag&sort=semver)
+[![Release](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapi.github.com%2Frepos%2Ffricker-studios%2Fdns-ui%2Freleases%2Flatest&query=%24.tag_name&label=release&cacheSeconds=60)](https://github.com/fricker-studios/dns-ui/releases/latest)
 
 
 This repository/project serves to ease in the creation and management of:
