@@ -5,67 +5,47 @@ on:
     tags:
       - '*'
 
-env:
-  IMAGE_TAG: v.${{ github.ref_name }}
-  INTERNAL_REGISTRY_URL: ${{ secrets.INTERNAL_REGISTRY_URL }}
-  IMAGE_NAME: ${{ secrets.INTERNAL_REGISTRY_URL }}/dns-ui
-
 jobs:
-  build-image-x64:
-    runs-on: [self-hosted, X64]
-    name: Build Image (x64)
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  build-multiarch-internal:
+    name: Build and Push Multi-Arch Image (Internal)
+    uses: fricker-studios/github-actions/.github/workflows/build-multiarch-image.yml@main
+    with:
+      image_name: ${{ vars.INTERNAL_REGISTRY_URL }}/internal/dns-ui
+      registry: ${{ vars.INTERNAL_REGISTRY_URL }}
+      push: true
+      tags: |
+        v.${{ github.ref_name }}
+        latest
+    secrets:
+      registry_username: ${{ secrets.REGISTRY_USERNAME }}
+      registry_password: ${{ secrets.REGISTRY_PASSWORD }}
 
-      - name: Build and push image
-        env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}-x64
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        run: |
-          docker build --platform linux/amd64 --provenance=false -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
-          docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest-x64
-          docker push $IMAGE_NAME:$IMAGE_TAG
-          docker push $IMAGE_NAME:latest-x64
+  build-multiarch-docker:
+    name: Build and Push Multi-Arch Image (Docker Hub)
+    uses: fricker-studios/github-actions/.github/workflows/build-multiarch-image.yml@main
+    with:
+      image_name: alexfricker/dns-ui
+      push: true
+      tags: |
+        v.${{ github.ref_name }}
+        latest
 
-  build-image-arm:
-    runs-on: [self-hosted, ARM64]
-    name: Build Image (arm64)
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+  update-gitops-manifest:
+    name: Update GitOps Manifest (Demo)
+    needs: [build-multiarch-internal, build-multiarch-docker]
+    uses: fricker-studios/github-actions/.github/workflows/update-gitops-manifest.yml@main
+    with:
+      image_tag: v.${{ github.ref_name }}
+      gitops_repo: fricker-studios/gitops-demo
+      project_source_dir: dns
+    secrets:
+      GITOPS_ACCESS_TOKEN: ${{ secrets.GITOPS_PAT }}
 
-      - name: Build and push image
-        env:
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}-arm64
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        run: |
-          docker build --platform linux/arm64 --provenance=false -t $IMAGE_NAME:$IMAGE_TAG -f Dockerfile .
-          docker tag $IMAGE_NAME:$IMAGE_TAG $IMAGE_NAME:latest-arm64
-          docker push $IMAGE_NAME:$IMAGE_TAG
-          docker push $IMAGE_NAME:latest-arm64
-
-  create-multiarch-manifest:
-    runs-on: [self-hosted, X64]
-    name: Create Multi-Arch Manifest
-    needs: [build-image-x64, build-image-arm]
-    
-    steps:
-      - name: Create and push manifests
-        env:
-          IMAGE_NAME: ${{ env.IMAGE_NAME }}
-          IMAGE_TAG: ${{ env.IMAGE_TAG }}
-        run: |
-          docker manifest rm $IMAGE_NAME:$IMAGE_TAG || true
-          docker manifest create $IMAGE_NAME:$IMAGE_TAG \
-            $IMAGE_NAME:$IMAGE_TAG-x64 \
-            $IMAGE_NAME:$IMAGE_TAG-arm64
-          docker manifest push $IMAGE_NAME:$IMAGE_TAG
-          
-          docker manifest rm $IMAGE_NAME:latest || true
-          docker manifest create $IMAGE_NAME:latest \
-            $IMAGE_NAME:latest-x64 \
-            $IMAGE_NAME:latest-arm64
-          docker manifest push $IMAGE_NAME:latest
+  argocd-sync:
+    name: ArgoCD Sync Application (Demo)
+    needs: update-gitops-manifest
+    uses: fricker-studios/github-actions/.github/workflows/argocd-sync.yml@main
+    with:
+      application: dns-demo
+    secrets:
+      ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
