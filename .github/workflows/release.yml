@@ -58,4 +58,4 @@ jobs:
       github_ref: v.${{ github.ref_name }}
       generate_notes: true
     secrets:
-      github_token: ${{ secrets.GITOPS_PAT }}
+      gh_token: ${{ secrets.GITOPS_PAT }}
