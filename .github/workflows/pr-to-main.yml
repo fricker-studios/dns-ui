@@ -59,6 +59,9 @@ jobs:
         DNS_SENTRY_TRACES_SAMPLE_RATE=0.5
         DNS_SENTRY_PROFILES_SAMPLE_RATE=0.5
       sentry_dsn_var_name: DNS_SENTRY_DSN
+      download_artifacts: true
+      artifact_name: ui-files
+      artifact_path: "frontend/dist"
     secrets:
       registry_username: ${{ secrets.REGISTRY_USERNAME }}
       registry_password: ${{ secrets.REGISTRY_PASSWORD }}
