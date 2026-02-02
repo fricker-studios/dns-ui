@@ -1,4 +1,6 @@
 # DNS Console
+[![Release to Production](https://github.com/fricker-studios/dns-ui/actions/workflows/release.yml/badge.svg)](https://github.com/fricker-studios/dns-ui/actions/workflows/release.yml)
+
 This repository/project serves to ease in the creation and management of:
   - bind (DNS) & server configuration
   - zones & recordsets
