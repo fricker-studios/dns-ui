@@ -7,7 +7,7 @@ on:
 
 jobs:
   build-multiarch:
-    uses: fricker-studios/github-actions/build-multiarch-image.yml@main
+    uses: fricker-studios/github-actions/.github/workflows/build-multiarch-image.yml@main
     with:
       image_name: ${{ vars.INTERNAL_REGISTRY_URL }}/internal/dns-ui
       registry: ${{ vars.INTERNAL_REGISTRY_URL }}
