@@ -14,7 +14,7 @@ jobs:
       registry: ${{ vars.INTERNAL_REGISTRY_URL }}
       push: true
       tags: |
-        v.${{ github.ref_name }}
+        ${{ github.ref_name }}
         latest
     secrets:
       registry_username: ${{ secrets.REGISTRY_USERNAME }}
@@ -27,7 +27,7 @@ jobs:
       image_name: alexfricker/dns-ui
       push: true
       tags: |
-        v.${{ github.ref_name }}
+        ${{ github.ref_name }}
         latest
 
   update-gitops-manifest:
@@ -35,7 +35,7 @@ jobs:
     needs: [build-multiarch-internal, build-multiarch-docker]
     uses: fricker-studios/github-actions/.github/workflows/update-gitops-manifest.yml@main
     with:
-      image_tag: v.${{ github.ref_name }}
+      image_tag: ${{ github.ref_name }}
       gitops_repo: fricker-studios/gitops-demo
       project_source_dir: dns
     secrets:
@@ -55,7 +55,7 @@ jobs:
     needs: [build-multiarch-internal, build-multiarch-docker, argocd-sync]
     uses: fricker-studios/github-actions/.github/workflows/github-release.yml@main
     with:
-      github_ref: v.${{ github.ref_name }}
+      tag: ${{ github.ref_name }}
       generate_notes: true
     secrets:
       gh_token: ${{ secrets.GITOPS_PAT }}
