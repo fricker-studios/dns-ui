@@ -8,6 +8,7 @@ This repository/project serves to ease in the creation and management of:
   - zones & recordsets
   - delegation & replication
 
+
 The default application provides an unauthenticated UI on port 8080 (http://localhost:8080).
 
 <img width="1512" height="756" alt="image" src="https://github.com/user-attachments/assets/92c67f59-e205-402b-a010-688c5f53cbc0" />
